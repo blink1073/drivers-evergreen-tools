@@ -30,7 +30,7 @@ PYTHON="$(find_python3)"
 venvcreate "$PYTHON" venv
 
 # Install from github to get the latest mongo-orchestration.
-python -m pip install --upgrade 'https://github.com/10gen/mongo-orchestration/archive/upgrade-pymongo.tar.gz'
+python -m pip install --upgrade 'https://github.com/blink1073/mongo-orchestration/archive/upgrade-pymongo.tar.gz'
 python -m pip list
 cd -
 
