@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -eux
+set -ex
 
 if [ -z "$BASH" ]; then
   echo "start-orchestration.sh must be run in a Bash shell!" 1>&2
