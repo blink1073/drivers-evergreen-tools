@@ -8,6 +8,9 @@ set -ex
 
 env
 
+aws sts get-caller-identity
+aws sts assume-role --role-arn "arn:aws:sts::557821124784:assumed-role/ecsTaskExecutionRole" --role-session-name "test"
+
 mkdir -p /data/db || true
 
 /root/mongod --fork --logpath server.log --setParameter authenticationMechanisms="MONGODB-AWS,SCRAM-SHA-256"
