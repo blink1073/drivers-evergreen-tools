@@ -12,7 +12,7 @@ curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip
 apt-get update
 apt-get install -y unzip
 unzip awscliv2.zip
-sudo ./aws/install
+./aws/install
 aws sts get-caller-identity
 aws sts assume-role --role-arn "arn:aws:sts::557821124784:assumed-role/ecsTaskExecutionRole" --role-session-name "test"
 
