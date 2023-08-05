@@ -9,8 +9,8 @@ set -ex
 env
 
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-sudo apt-get update
-sudo apt-get install -y unzip
+apt-get update
+apt-get install -y unzip
 unzip awscliv2.zip
 sudo ./aws/install
 aws sts get-caller-identity
