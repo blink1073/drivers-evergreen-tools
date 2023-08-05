@@ -13,8 +13,10 @@ apt-get update
 apt-get install -y unzip
 unzip awscliv2.zip
 ./aws/install
-aws sts assume-role --role-arn "arn:aws:sts::557821124784:assumed-role/ecsTaskExecutionRole" --role-session-name "test"
+
 aws sts get-caller-identity
+#aws sts assume-role --role-arn "arn:aws:sts::557821124784:assumed-role/ecsTaskExecutionRole" --role-session-name "test"
+
 
 mkdir -p /data/db || true
 
