@@ -49,7 +49,9 @@ is_python3() (
   local -r version_output="$("$bin" -V 2>&1 | tr -d '\n')"
 
   # For diagnostic purposes.
-  echo " - $bin: $version_output"
+  if [ -n "$DEBUG" ]; then
+    echo " - $bin: $version_output"
+  fi
 
   # Evaluate result of this function.
   # Note: Python True (1) and False (0) is treated as fail (1) and success (0)
@@ -243,10 +245,12 @@ find_python3() (
     fi
 
     # For diagnostic purposes.
-    echo "List of python3 binaries to test:"
-    for bin in "${bins[@]}"; do
-      echo " - $bin"
-    done
+    if [ -n "$DEBUG" ]; then
+      echo "List of python3 binaries to test:"
+      for bin in "${bins[@]}"; do
+        echo " - $bin"
+      done
+    fi
   } 1>&2
 
   # Find a binary that is capable of venv or virtualenv and set it as `res`.
@@ -255,17 +259,19 @@ find_python3() (
     echo "Testing python3 binaries..."
     for bin in "${bins[@]}"; do
       {
-        if ! is_venv_capable "$bin"; then
-          echo " - $bin is not capable of venv"
+        if [ -n "$DEBUG" ]; then
+          if ! is_venv_capable "$bin"; then
+            echo " - $bin is not capable of venv"
 
-          if ! is_virtualenv_capable "$bin"; then
-            echo " - $bin is not capable of virtualenv"
-            continue
+            if ! is_virtualenv_capable "$bin"; then
+              echo " - $bin is not capable of virtualenv"
+              continue
+            else
+              echo " - $bin is capable of virtualenv"
+            fi
           else
-            echo " - $bin is capable of virtualenv"
+            echo " - $bin is capable of venv"
           fi
-        else
-          echo " - $bin is capable of venv"
         fi
       } 1>&2
 
