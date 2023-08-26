@@ -205,7 +205,7 @@ find_python3() (
   # The list of Python binaries to test for venv or virtualenv support.
   # The binaries are tested in the order of their position in the array.
   {
-    echo "Finding python3 binaries to test..." >&2
+    echo "Finding python3 binaries to test..."
 
     append_bins() {
       local -r bin_path="${1:?'missing path'}"
@@ -237,20 +237,20 @@ find_python3() (
 
     bin="python"
     if is_python3 "$bin"; then bins+=("$bin"); fi
-  } 1>&2
+  }
 
   {
     # Some environments trigger an unbound variable error if "${bins[@]}" is empty when used below.
     if (("${#bins[@]}" == 0)); then
-      echo "Could not find any python3 binaries!" >&2
+      echo "Could not find any python3 binaries!"
       return 1
     fi
 
     # For diagnostic purposes.
     if [ -n "$DEBUG" ]; then
-      echo "List of python3 binaries to test:" >&2
+      echo "List of python3 binaries to test:"
       for bin in "${bins[@]}"; do
-        echo " - $bin" >&2
+        echo " - $bin"
       done
     fi
   } 1>&2
@@ -258,27 +258,28 @@ find_python3() (
   # Find a binary that is capable of venv or virtualenv and set it as `res`.
   local res=""
   {
-    echo "Testing python3 binaries..." >&2
+    echo "Testing python3 binaries..."
 
     for bin in "${bins[@]}"; do
       {
         if [ -n "$DEBUG" ]; then
           if ! is_venv_capable "$bin"; then
-            echo " - $bin is not capable of venv" >&2
+            echo " - $bin is not capable of venv"
 
             if ! is_virtualenv_capable "$bin"; then
-              echo " - $bin is not capable of virtualenv" >&2
+              echo " - $bin is not capable of virtualenv"
               continue
             else
-              echo " - $bin is capable of virtualenv" >&2
+              echo " - $bin is capable of virtualenv"
             fi
           else
-            echo " - $bin is capable of venv" >&2
+            echo " - $bin is capable of venv"
           fi
         fi
       } 1>&2
 
       res="$bin"
+      echo "Using python3 binary: $res"
       break
     done
 
@@ -287,8 +288,6 @@ find_python3() (
       return 1
     fi
   } 1>&2
-
-  echo "Using python3 binary: $res" >&2
 
   # This echo is captured as the path to the binary.
   echo "$res"
