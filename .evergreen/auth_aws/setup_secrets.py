@@ -5,7 +5,6 @@ Script for fetching AWS Secrets Vault secrets for use in testing.
 import argparse
 import json
 import os
-import yaml
 import boto3
 
 
@@ -87,4 +86,7 @@ def main():
 
 
 if __name__ == '__main__':
+    # Note: for local testing using AWS SSO credentials,
+    # you may need to set the AWS_PROFILE environment variable
+    # to point to your local profile name.
     main()

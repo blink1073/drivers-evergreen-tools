@@ -35,6 +35,8 @@ is_python3() (
   set -o errexit
   set -o pipefail
 
+  local DEBUG=${DEBUG:-}
+
   # Binary to use, e.g. "python".
   local -r bin="${1:?'is_python3 requires a name or path of a python binary to test'}"
 
@@ -199,6 +201,8 @@ find_python3() (
 
   local -a bins=()
   local bin=""
+
+  local DEBUG=${DEBUG:-}
 
   # The list of Python binaries to test for venv or virtualenv support.
   # The binaries are tested in the order of their position in the array.
