@@ -33,6 +33,8 @@ activate_authoidcvenv() {
     # shellcheck source=.evergreen/find-python3.sh
     . ../find-python3.sh || return
 
+    echo "Creating virtual environment 'authoidcvenv'..."
+
     venvcreate "$(find_python3 2>/dev/null)" authoidcvenv || return
 
     local packages=(

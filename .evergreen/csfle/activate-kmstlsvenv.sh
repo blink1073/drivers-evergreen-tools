@@ -33,6 +33,8 @@ activate_kmstlsvenv() {
     # shellcheck source=.evergreen/find-python3.sh
     . ../find-python3.sh || return
 
+    echo "Creating virtual environment 'kmstlsvenv'..."
+
     venvcreate "$(find_python3 2>/dev/null)" kmstlsvenv || return
 
     local packages=(
