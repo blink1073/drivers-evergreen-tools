@@ -237,7 +237,7 @@ find_python3() (
 
     bin="python"
     if is_python3 "$bin"; then bins+=("$bin"); fi
-  }
+  } 1>&2
 
   {
     # Some environments trigger an unbound variable error if "${bins[@]}" is empty when used below.
