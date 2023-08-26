@@ -202,16 +202,10 @@ find_python3() (
   local -a bins=()
   local bin=""
 
-  local DEBUG=${DEBUG:-}
-
-  echo "Finding suitable python3 binary..."
-
   # The list of Python binaries to test for venv or virtualenv support.
   # The binaries are tested in the order of their position in the array.
   {
-    if [ -n "$DEBUG" ]; then
-      echo "Finding python3 binaries to test..."
-    fi
+    echo "Finding python3 binaries to test..." >&2
 
     append_bins() {
       local -r bin_path="${1:?'missing path'}"
@@ -248,15 +242,15 @@ find_python3() (
   {
     # Some environments trigger an unbound variable error if "${bins[@]}" is empty when used below.
     if (("${#bins[@]}" == 0)); then
-      echo "Could not find any python3 binaries!"
+      echo "Could not find any python3 binaries!" >&2
       return 1
     fi
 
     # For diagnostic purposes.
     if [ -n "$DEBUG" ]; then
-      echo "List of python3 binaries to test:"
+      echo "List of python3 binaries to test:" >&2
       for bin in "${bins[@]}"; do
-        echo " - $bin"
+        echo " - $bin" >&2
       done
     fi
   } 1>&2
@@ -264,24 +258,22 @@ find_python3() (
   # Find a binary that is capable of venv or virtualenv and set it as `res`.
   local res=""
   {
-    if [ -n "$DEBUG" ]; then
-      echo "Testing python3 binaries..."
-    fi
+    echo "Testing python3 binaries..." >&2
 
     for bin in "${bins[@]}"; do
       {
         if [ -n "$DEBUG" ]; then
           if ! is_venv_capable "$bin"; then
-            echo " - $bin is not capable of venv"
+            echo " - $bin is not capable of venv" >&2
 
             if ! is_virtualenv_capable "$bin"; then
-              echo " - $bin is not capable of virtualenv"
+              echo " - $bin is not capable of virtualenv" >&2
               continue
             else
-              echo " - $bin is capable of virtualenv"
+              echo " - $bin is capable of virtualenv" >&2
             fi
           else
-            echo " - $bin is capable of venv"
+            echo " - $bin is capable of venv" >&2
           fi
         fi
       } 1>&2
@@ -296,7 +288,10 @@ find_python3() (
     fi
   } 1>&2
 
-  echo "Using python3 binary: $res"
+  echo "Using python3 binary: $res" >&2
+
+  # This echo is captured as the path to the binary.
+  echo "$res"
 
   return 0
 )

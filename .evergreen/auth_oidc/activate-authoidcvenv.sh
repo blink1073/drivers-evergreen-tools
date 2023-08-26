@@ -33,7 +33,7 @@ activate_authoidcvenv() {
     # shellcheck source=.evergreen/find-python3.sh
     . ../find-python3.sh || return
 
-    venvcreate "$(find_python3)" authoidcvenv || return
+    venvcreate "$(find_python3 2>/dev/null)" authoidcvenv || return
 
     local packages=(
       "boto3~=1.19.0"
