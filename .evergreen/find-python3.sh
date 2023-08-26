@@ -204,10 +204,14 @@ find_python3() (
 
   local DEBUG=${DEBUG:-}
 
+  echo "Finding suitable python3 binary..."
+
   # The list of Python binaries to test for venv or virtualenv support.
   # The binaries are tested in the order of their position in the array.
   {
-    echo "Finding python3 binaries to test..."
+    if [ -n "$DEBUG" ]; then
+      echo "Finding python3 binaries to test..."
+    fi
 
     append_bins() {
       local -r bin_path="${1:?'missing path'}"
@@ -260,7 +264,10 @@ find_python3() (
   # Find a binary that is capable of venv or virtualenv and set it as `res`.
   local res=""
   {
-    echo "Testing python3 binaries..."
+    if [ -n "$DEBUG" ]; then
+      echo "Testing python3 binaries..."
+    fi
+
     for bin in "${bins[@]}"; do
       {
         if [ -n "$DEBUG" ]; then
@@ -289,7 +296,7 @@ find_python3() (
     fi
   } 1>&2
 
-  echo "$res"
+  echo "Using python3 binary: $res"
 
   return 0
 )
