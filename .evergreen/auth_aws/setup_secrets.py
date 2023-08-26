@@ -86,7 +86,6 @@ def main():
 
 
 if __name__ == '__main__':
-    # Note: for local testing using AWS SSO credentials,
-    # you may need to set the AWS_PROFILE environment variable
-    # to point to your local profile name.
+    # See https://wiki.corp.mongodb.com/display/DRIVERS/Using+AWS+Secrets+Manager+to+Store+Testing+Secrets
+    # for details on usage.
     main()

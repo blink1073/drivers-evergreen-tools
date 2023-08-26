@@ -55,14 +55,14 @@ venvcreate() {
 
     case "$mod" in
     venv)
-      "$bin" -m "$mod" -q --system-site-packages "$real_path" || continue
+      "$bin" -m "$mod" --system-site-packages "$real_path" || continue
       ;;
     virtualenv)
       # -p: some old versions of virtualenv (e.g. installed on Debian 10) are
       # buggy. Without -p, the created virtual environment may use the wrong
       # Python binary (e.g. using a Python 2 binary even if it was created by a
       # Python 3 binary).
-      "$bin" -m "$mod" -p "$bin" -q --system-site-packages "$real_path" || continue
+      "$bin" -m "$mod" -p "$bin" --system-site-packages "$real_path" || continue
       ;;
     *)
       echo "Unexpected virtual environment module $mod!"
