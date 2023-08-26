@@ -35,8 +35,6 @@ is_python3() (
   set -o errexit
   set -o pipefail
 
-  local DEBUG=${DEBUG:-}
-
   # Binary to use, e.g. "python".
   local -r bin="${1:?'is_python3 requires a name or path of a python binary to test'}"
 
@@ -51,9 +49,7 @@ is_python3() (
   local -r version_output="$("$bin" -V 2>&1 | tr -d '\n')"
 
   # For diagnostic purposes.
-  if [ -n "$DEBUG" ]; then
-    echo " - $bin: $version_output"
-  fi
+  echo " - $bin: $version_output"
 
   # Evaluate result of this function.
   # Note: Python True (1) and False (0) is treated as fail (1) and success (0)
@@ -247,39 +243,33 @@ find_python3() (
     fi
 
     # For diagnostic purposes.
-    if [ -n "$DEBUG" ]; then
-      echo "List of python3 binaries to test:"
-      for bin in "${bins[@]}"; do
-        echo " - $bin"
-      done
-    fi
+    echo "List of python3 binaries to test:"
+    for bin in "${bins[@]}"; do
+      echo " - $bin"
+    done
   } 1>&2
 
   # Find a binary that is capable of venv or virtualenv and set it as `res`.
   local res=""
   {
     echo "Testing python3 binaries..."
-
     for bin in "${bins[@]}"; do
       {
-        if [ -n "$DEBUG" ]; then
-          if ! is_venv_capable "$bin"; then
-            echo " - $bin is not capable of venv"
+        if ! is_venv_capable "$bin"; then
+          echo " - $bin is not capable of venv"
 
-            if ! is_virtualenv_capable "$bin"; then
-              echo " - $bin is not capable of virtualenv"
-              continue
-            else
-              echo " - $bin is capable of virtualenv"
-            fi
+          if ! is_virtualenv_capable "$bin"; then
+            echo " - $bin is not capable of virtualenv"
+            continue
           else
-            echo " - $bin is capable of venv"
+            echo " - $bin is capable of virtualenv"
           fi
+        else
+          echo " - $bin is capable of venv"
         fi
       } 1>&2
 
       res="$bin"
-      echo "Using python3 binary: $res"
       break
     done
 
@@ -289,7 +279,6 @@ find_python3() (
     fi
   } 1>&2
 
-  # This echo is captured as the path to the binary.
   echo "$res"
 
   return 0
