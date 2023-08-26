@@ -34,8 +34,9 @@ activate_authawsvenv() {
     . ../find-python3.sh || return
 
     echo "Creating virtual environment 'authawsvenv'..."
-
-    venvcreate "$(find_python3 2>/dev/null)" authawsvenv || return
+    PYTHON_BINARY="$(find_python3 2>/dev/null)"
+    echo "Got python binary: $PYTHON_BINARY"
+    venvcreate $PYTHON_BINARY authawsvenv || return
 
     local packages=(
       "boto3~=1.26.0"
