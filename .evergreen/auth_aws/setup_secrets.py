@@ -11,31 +11,12 @@ import boto3
 def get_secrets(vaults, region, profile):
     """Get the driver secret values."""
     # Handle local credentials.
-    try:
-        if profile is not None:
-            session = boto3.Session(profile_name=profile)
-        else:
-            session = boto3.Session()
-        client = session.client(service_name='secretsmanager', region_name=region)
-    except Exception:
-        print("Failed to connect using AWS credentials, trying with environment variables")
-        if "AWS_SESSION_TOKEN" not in os.environ:
-            if "AWS_ROLE_ARN" in os.environ:
-                session = boto3.Session(aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
-                                        aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'])
-                client = session.client(service_name='sts', region_name=region)
-                creds = client.assume_role(RoleArn=os.environ['AWS_ROLE_ARN'], RoleSessionName='test')['Credentials']
-                os.environ['AWS_ACCESS_KEY_ID'] = creds['AccessKeyId']
-                os.environ['AWS_SECRET_ACCESS_KEY'] = creds['SecretAccessKey']
-                os.environ['AWS_SESSION_TOKEN'] = creds['SessionToken']
-            else:
-                raise ValueError('Missing AWS credentials')
-
-        # Create a session using the given creds
-        session = boto3.Session(aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
-                                aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
-                                aws_session_token=os.environ['AWS_SESSION_TOKEN'])
-        client = session.client(service_name='secretsmanager', region_name=region)
+    # TODO: rectify this with how we run locally.
+    profile = profile or os.environ.get("AWS_PROFILE")
+    if "AWS_ACCESS_KEY_ID" not in os.environ and not profile:
+        raise ValueError("Please provide a profile (typically using AWS_PROFILE)")
+    session = boto3.Session(profile_name=profile)
+    client = session.client(service_name='secretsmanager', region_name=region)
 
     secrets = []
     try:
