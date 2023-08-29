@@ -159,7 +159,6 @@ def remote_create_container(cluster, task_definition, service_name, subnets, sec
 
     resp = ecs_client.create_service(cluster=cluster, serviceName=service_name,
         taskDefinition = task_definition,
-        taskRoleArn = 'arn:aws:sts::557821124784:role/ecsTaskExecutionRole',
         desiredCount = 1,
         launchType='FARGATE',
         networkConfiguration={
