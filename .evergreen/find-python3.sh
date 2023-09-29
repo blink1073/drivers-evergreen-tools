@@ -222,7 +222,7 @@ find_python3() (
     if [ "Windows_NT" = "$OS" ]; then
       # C:/python/Python3X/bin/python
       append_bins "C:/python" "Python3[0-9]*" "python3.exe" "python.exe"
-    else if [ "$(uname -s)" = "Darwin" ]; then
+    elif [ "$(uname -s)" = "Darwin" ]; then
       append_bins "/Library/Frameworks/Python.Framework/Versions/" "3.[0-9]*" "bin/python3"
     else
       # /opt/python/3.X/bin/python
