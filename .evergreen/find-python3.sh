@@ -219,14 +219,18 @@ find_python3() (
       done
     }
 
-    # C:/python/Python3X/bin/python
-    append_bins "C:/python" "Python3[0-9]*" "python3.exe" "python.exe"
+    if [ "Windows_NT" = "$OS" ]; then
+      # C:/python/Python3X/bin/python
+      append_bins "C:/python" "Python3[0-9]*" "python3.exe" "python.exe"
+    else if [ "$(uname -s)" = "Darwin" ]; then
+      append_bins "/Library/Frameworks/Python.Framework/Versions/" "3.[0-9]*" "bin/python3"
+    else
+      # /opt/python/3.X/bin/python
+      append_bins "/opt/python" "3.[0-9]*" "bin/python3" "bin/python"
 
-    # /opt/python/3.X/bin/python
-    append_bins "/opt/python" "3.[0-9]*" "bin/python3" "bin/python"
-
-    # /opt/mongodbtoolchain/vX/bin/python
-    append_bins "/opt/mongodbtoolchain" "v[0-9]*" "bin/python3" "bin/python"
+      # /opt/mongodbtoolchain/vX/bin/python
+      append_bins "/opt/mongodbtoolchain" "v[0-9]*" "bin/python3" "bin/python"
+    fi
 
     bin="python3"
     if is_python3 "$bin"; then bins+=("$bin"); fi
