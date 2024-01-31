@@ -49,9 +49,9 @@
     }
   ],
   "sslParams": {
-      "sslOnNormalPorts": true,
-      "sslPEMKeyFile": "ABSOLUTE_PATH_REPLACEMENT_TOKEN/.evergreen/x509gen/server.pem",
-      "sslCAFile": "ABSOLUTE_PATH_REPLACEMENT_TOKEN/.evergreen/x509gen/ca.pem",
-      "sslWeakCertificateValidation" : true
+      "tlsOnNormalPorts": true,
+      "tlsCertificateKeyFile": "ABSOLUTE_PATH_REPLACEMENT_TOKEN/.evergreen/x509gen/server.pem",
+      "tlsCAFile": "ABSOLUTE_PATH_REPLACEMENT_TOKEN/.evergreen/x509gen/ca.pem",
+      "tlsAllowConnectionsWithoutCertificates" : true
   }
 }
