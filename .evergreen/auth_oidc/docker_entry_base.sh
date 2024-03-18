@@ -15,6 +15,12 @@ python oidc_write_orchestration.py
 
 bash /root/base-entrypoint.sh
 
-$MONGODB_BINARIES/mongosh $DRIVERS_TOOLS/.evergreen/auth_oidc/setup_oidc.js
+if [[ $OIDC_TYPE == "single" ]]; then
+    PORT=27017
+else
+    PORT=27018
+fi
+
+$MONGODB_BINARIES/mongosh -f $DRIVERS_TOOLS/.evergreen/auth_oidc/setup_oidc.js "mongodb://127.0.0.1:$PORT/serverSelectionTimeoutMS=10000"
 
 echo "Server started!"

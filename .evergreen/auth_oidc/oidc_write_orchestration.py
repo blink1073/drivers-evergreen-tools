@@ -60,6 +60,26 @@ def main():
     # Get the secrets.
     secrets = get_secrets()
 
+    oidc_type = os.environ.get('OIDC_TYPE', 'single')
+
+    data = {
+        "id": f"oidc-{oidc_type}",
+        "auth_key": "secret",
+        "login": "bob",
+        "name": "mongod",
+        "password": "pwd123",
+    }
+    proc_params = {
+        "ipv6": "NO_IPV6" not in os.environ,
+        "bind_ip": "0.0.0.0,::1",
+        "logappend": True,
+        "port": 27017,
+        "setParameter": {
+            "enableTestCommands": 1,
+            "authenticationMechanisms": "SCRAM-SHA-256,MONGODB-OIDC",
+        }
+    }
+
     # Write the oidc orchestration file.
     provider1_info = {
         "authNamePrefix": "test1",
@@ -70,30 +90,7 @@ def main():
         "requestScopes": ["fizz", "buzz"],
 
     }
-    providers = json.dumps([provider1_info], separators=(',',':'))
 
-    data = {
-        "id": "oidc-repl0",
-        "auth_key": "secret",
-        "login": "bob",
-        "name": "mongod",
-        "password": "pwd123",
-        "members": [{
-            "procParams": {
-                "ipv6": "NO_IPV6" not in os.environ,
-                "bind_ip": "0.0.0.0,::1",
-                "logappend": True,
-                "port": 27017,
-                "setParameter": {
-                    "enableTestCommands": 1,
-                    "authenticationMechanisms": "SCRAM-SHA-256,MONGODB-OIDC",
-                    "oidcIdentityProviders": providers
-                }
-            }
-        }]
-    }
-
-    provider1_info['matchPattern'] = "test_user1"
     provider2_info = {
         "authNamePrefix": "test2",
         "issuer": secrets['oidc_issuer_2_uri'],
@@ -103,26 +100,18 @@ def main():
         "matchPattern": "test_user2",
         "requestScopes": ["foo", "bar"],
     }
-    providers = [provider1_info, provider2_info]
-    providers = json.dumps(providers, separators=(',',':'))
-    data['members'].append({
-        "procParams": {
-            "ipv6": "NO_IPV6" not in os.environ,
-            "bind_ip": "0.0.0.0,::1",
-            "logappend": True,
-            "port": 27018,
-            "setParameter": {
-                "enableTestCommands": 1,
-                "authenticationMechanisms": "SCRAM-SHA-256,MONGODB-OIDC",
-                "oidcIdentityProviders": providers
-            }
-        },
-        "rsParams": {
-            "priority": 0
-        }
-    })
 
-    orch_file = os.path.abspath(os.path.join(HERE, '..', 'orchestration', 'configs', 'replica_sets', 'auth-oidc.json'))
+    if oidc_type == "single":
+        providers = json.dumps([provider1_info], separators=(',',':'))
+    else:
+        proc_params["port"] = 27018
+        provider1_info['matchPattern'] = "test_user1"
+        providers = json.dumps([provider1_info, provider2_info], separators=(',',':'))
+
+    proc_params["setParameter"]["oidcIdentityProviders"] = providers
+    data["procParams"] = proc_params
+
+    orch_file = os.path.abspath(os.path.join(HERE, '..', 'orchestration', 'configs', 'servers', 'auth-oidc.json'))
     with open(orch_file, 'w') as fid:
         json.dump(data, fid, indent=4)
     print(f"Wrote OIDC config to {orch_file}")
