@@ -8,21 +8,6 @@ SCRIPT_DIR=$(dirname ${BASH_SOURCE[0]})
 pushd $SCRIPT_DIR
 bash ./oidc_get_tokens.sh
 
-await_server() {
-    echo "Waiting on $1 server on port $2"
-    for i in $(seq 20); do
-        if curl -s "localhost:$2" 2>&1 /dev/null; test $? -eq 0; then
-            echo "Waiting on $1 server on port $2...done"
-            return 0
-        else
-            echo "Could not connect, sleeping."
-            sleep 10
-        fi
-    done
-    echo "Could not detect '$1' server on port $2"
-    exit 1
-}
-
 source ./secrets-export.sh
 echo "export OIDC_URI_MULTI=$OIDC_ATLAS_URI_MULTI" >> secrets-export.sh
 
@@ -34,9 +19,16 @@ if [[ "${OSTYPE:?}" == cygwin ]] || [[ ! $(command -v docker 2>&1 /dev/null) ]];
 
 # Otherwise use local cluster from docker.
 else
+    rm -f $DRIVERS_TOOLS/server.log
     DOCKER_ARG="-di" bash ./start_local_server.sh
     echo 'export OIDC_URI_SINGLE="mongodb://localhost:27017"' >> secrets-export.sh
     echo "export OIDC_ADMIN_USER=bob" >> secrets-export.sh
     echo "export OIDC_ADMIN_PASSWORD=pwd123" >> secrets-export.sh
-    await_server "MongoDB" 27017
+    echo "Waiting for orchestration to start..."
+    while [ ! -f $DRIVERS_TOOLS/server.log ]; do sleep 1; done
+    echo "Waiting for orchestration to start... done."
+    echo "Waiting for server to start..."
+    grep -q 'send_result' <(tail -f $DRIVERS_TOOLS/server.log)
+    echo "Waiting for server to start... done."
+    cat $DRIVERS_TOOLS/server.log
 fi

@@ -40,7 +40,7 @@ There is also a token `test_user2` for the second IdP, and `test_user1_expires` 
 can be used to test expired credentials.
 
 If not on Windows and Docker is available, it will start a local server.  Otherwise,
-`OIDC_ATLAS_URI_SINGLE` is used.
+`OIDC_ATLAS_URI_SINGLE` is used as `OIDC_URI_SINGLE`.
 
 ```bash
 . $DRIVERS_TOOLS/.evergreen/auth_oidc/setup.sh
@@ -58,7 +58,7 @@ OIDC_ADMIN_PASSWORD
 
 While testing, to debug the server logs locally, use `docker ps` to find the running container,
 and then run `docker exec -it <container> /bin/bash` to log into the box.
-If you `cat /root/server.log` you can find the location of the `logpath`.
+If you `cat /root/drivers-evergreen/tools/server.log` you can find the location of the `logpath`.
 
 ## Local Testing for Multi IdP Server
 
