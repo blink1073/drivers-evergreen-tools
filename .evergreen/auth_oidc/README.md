@@ -7,7 +7,8 @@
 We have two dedicated Atlas clusters that are configured with OIDC, one with a single Identity Provider (Idp),
 and one with multiple IdPs configured.  Since `failCommand` is global, test runs have the chance to interfere
 with each other.  After we implement DRIVERS-2688, we can specify that OIDC tests that use `failCommand` must
-not be run on Atlas.
+not be run on Atlas.  In the mean time, we will have to keep testing against singled IdP Atlas cluster on
+MacOS and Windows hosts.
 
 When running `setup.sh`, the local server for single IdP will be used when not on Windows and docker is available.
 
@@ -35,17 +36,25 @@ OIDC_ISSUER_2_URI       # The issuer URI for mock IdP 2
 
 Use the `setup.sh` script to create a set of OIDC tokens in a temporary directory, including
 `test_user1` and `test_user1_expires`.  The temp file location is exported as `OIDC_TOKEN_DIR`.
+There is also a token `test_user2` for the second IdP, and `test_user1_expires` that
+can be used to test expired credentials.
+
 If not on Windows and Docker is available, it will start a local server.  Otherwise,
-`OIDC_ATLAS_URI_SINGLE` is used.  The URIs will be written to `secrets-export.sh` as
-`OIDC_URI_SINGLE` and `OIDC_URI_MULTI`.
+`OIDC_ATLAS_URI_SINGLE` is used.
 
 ```bash
-. ./setup.sh
+. $DRIVERS_TOOLS/.evergreen/auth_oidc/setup.sh
 OIDC_TOKEN_FILE="$OIDC_TOKEN_DIR/test_user1" /my/test/command
 ```
 
-There is also a token `test_user2` for the second IdP, and `test_user1_expires` that
-can be used to test expired credentials.
+The following values will be added to `secrets-export.sh`:
+
+```
+OIDC_URI_SINGLE
+OIDC_URI_MULTI
+OIDC_ADMIN_USER
+OIDC_ADMIN_PASSWORD
+```
 
 While testing, to debug the server logs locally, use `docker ps` to find the running container,
 and then run `docker exec -it <container> /bin/bash` to log into the box.
