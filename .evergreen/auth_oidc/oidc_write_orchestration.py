@@ -61,7 +61,7 @@ def main():
     # Write the oidc orchestration file.
     provider1_info = {
         "authNamePrefix": "test1",
-        "issuer": "https://eastus.oic.prod-aks.azure.com/c96563a8-841b-4ef9-af16-33548de0c958/6f427304-facf-4098-a3de-e24dcb798284",
+        "issuer": "https://eastus.oic.prod-aks.azure.com/c96563a8-841b-4ef9-af16-33548de0c958/6f427304-facf-4098-a3de-e24dcb798284/",
         "clientId": "system:serviceaccount:default:oidc-test-sa",
         "audience": "api://AzureADTokenExchange",
         "authorizationClaim": "foo",
