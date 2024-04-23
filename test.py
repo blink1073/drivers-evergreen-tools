@@ -1,15 +1,12 @@
 import os
-from azure.identity import DefaultAzureCredential
 from pymongo import MongoClient
 from pymongo.auth_oidc import OIDCCallback, OIDCCallbackContext, OIDCCallbackResult
 
-app_id = os.environ['AZURE_APP_CLIENT_ID']
-client_id = os.environ['AZURE_IDENTITY_CLIENT_ID']
-uri = "mongodb://127.0.0.1"
+uri = "mongodb://127.0.0.1:27017/?directConnection=true"
 
 class MyCallback(OIDCCallback):
     def fetch(self, context: OIDCCallbackContext) -> OIDCCallbackResult:
-        with open(os.environ['']) as fid:
+        with open(os.environ['AWS_WEB_IDENTITY_TOKEN_FILE']) as fid:
             token = fid.read()
         return OIDCCallbackResult(access_token=token)
 
@@ -17,3 +14,21 @@ props = dict(OIDC_CALLBACK=MyCallback())
 c = MongoClient(uri, authMechanism="MONGODB-OIDC", authMechanismProperties=props)
 c.test.test.insert_one({})
 c.close()
+
+# git clone https://github.com/mongodb-labs/drivers-evergreen-tools.git
+# cd drivers-evergreen-tools/
+# apt-get install vim lsof
+# override download-mongodb.sh and oidc_write_orchecstration.py
+# . ./activate-authoidcvenv.sh
+# python oidc_write_orchestration.py
+# MONGODB_VERSION=7.0 TOPOLOGY=replica_set ORCHESTRATION_FILE=auth-oidc.json bash ../run-orchestration.sh
+# export URI="mongodb://127.0.0.1:27017/?directConnection=true"
+# ../../mongodb/bin/mongosh -f ./setup_oidc.js "$URI&serverSelectionTimeoutMS=10000"
+
+
+# python3 -m venv venv
+# source venv/bin/activate
+# git clone https://github.com/mongodb/mongo-python-driver.git
+# pip install ./mongo-python-driver/
+# vim test.py
+# python test.py
