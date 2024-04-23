@@ -64,7 +64,7 @@ def main():
         "issuer": "https://eastus.oic.prod-aks.azure.com/c96563a8-841b-4ef9-af16-33548de0c958/6f427304-facf-4098-a3de-e24dcb798284/",
         "clientId": "system:serviceaccount:default:oidc-test-sa",
         "audience": "api://AzureADTokenExchange",
-        "authorizationClaim": "foo",
+        "useAuthorizationClaim": False,
         "requestScopes": ["fizz", "buzz"],
         "matchPattern": "test_user1"
     }

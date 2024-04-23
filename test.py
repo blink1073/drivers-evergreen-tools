@@ -32,9 +32,10 @@ export URI="mongodb://127.0.0.1:27017/?directConnection=true"
 ../mongodb/bin/mongosh -f ./setup_oidc.js "$URI&serverSelectionTimeoutMS=10000"
 '''
 
-# python3 -m venv venv
-# source venv/bin/activate
-# git clone https://github.com/mongodb/mongo-python-driver.git
-# pip install ./mongo-python-driver/
-# vim test.py
-# python test.py
+"""
+python3 -m venv venv
+source venv/bin/activate
+git clone https://github.com/mongodb/mongo-python-driver.git
+pip install ./mongo-python-driver/
+python test.py
+"""
