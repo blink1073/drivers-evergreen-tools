@@ -6,7 +6,7 @@ uri = "mongodb://127.0.0.1:27017/?directConnection=true"
 
 class MyCallback(OIDCCallback):
     def fetch(self, context: OIDCCallbackContext) -> OIDCCallbackResult:
-        with open(os.environ['AWS_WEB_IDENTITY_TOKEN_FILE']) as fid:
+        with open(os.environ['AZURE_FEDERATED_TOKEN_FILE']) as fid:
             token = fid.read()
         return OIDCCallbackResult(access_token=token)
 
@@ -28,7 +28,7 @@ c.close()
 # popd
 # MONGODB_VERSION=7.0 TOPOLOGY=replica_set ORCHESTRATION_FILE=auth-oidc.json bash run-orchestration.sh
 # export URI="mongodb://127.0.0.1:27017/?directConnection=true"
-# ../../mongodb/bin/mongosh -f ./setup_oidc.js "$URI&serverSelectionTimeoutMS=10000"
+# ../mongodb/bin/mongosh -f ./setup_oidc.js "$URI&serverSelectionTimeoutMS=10000"
 
 # python3 -m venv venv
 # source venv/bin/activate
