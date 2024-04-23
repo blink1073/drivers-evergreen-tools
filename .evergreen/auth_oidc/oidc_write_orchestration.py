@@ -61,9 +61,9 @@ def main():
     # Write the oidc orchestration file.
     provider1_info = {
         "authNamePrefix": "test1",
-        "issuer": "https://oidc.eks.us-west-1.amazonaws.com/id/1466597F373EB40EDF1FD3C151D10CDB",
-        "clientId": "system:serviceaccount:drivers-python:test-acct",
-        "audience": "sts.amazonaws.com",
+        "issuer": "https://eastus.oic.prod-aks.azure.com/c96563a8-841b-4ef9-af16-33548de0c958/6f427304-facf-4098-a3de-e24dcb798284",
+        "clientId": "system:serviceaccount:default:oidc-test-sa",
+        "audience": "api://AzureADTokenExchange",
         "authorizationClaim": "foo",
         "requestScopes": ["fizz", "buzz"],
         "matchPattern": "test_user1"

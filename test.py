@@ -15,16 +15,20 @@ c = MongoClient(uri, authMechanism="MONGODB-OIDC", authMechanismProperties=props
 c.test.test.insert_one({})
 c.close()
 
-# git clone https://github.com/mongodb-labs/drivers-evergreen-tools.git
+# apt-get update -y
+# apt-get install -y vim lsof git python3 python3-venv curl
+# git clone https://github.com/blink1073/drivers-evergreen-tools.git
 # cd drivers-evergreen-tools/
-# apt-get install vim lsof
-# override download-mongodb.sh and oidc_write_orchecstration.py
+# git fetch origin test-eks
+# git checkout test-eks
+# cd ./.evergreen
+# pushd auth_oidc
 # . ./activate-authoidcvenv.sh
 # python oidc_write_orchestration.py
-# MONGODB_VERSION=7.0 TOPOLOGY=replica_set ORCHESTRATION_FILE=auth-oidc.json bash ../run-orchestration.sh
+# popd
+# MONGODB_VERSION=7.0 TOPOLOGY=replica_set ORCHESTRATION_FILE=auth-oidc.json bash run-orchestration.sh
 # export URI="mongodb://127.0.0.1:27017/?directConnection=true"
 # ../../mongodb/bin/mongosh -f ./setup_oidc.js "$URI&serverSelectionTimeoutMS=10000"
-
 
 # python3 -m venv venv
 # source venv/bin/activate
