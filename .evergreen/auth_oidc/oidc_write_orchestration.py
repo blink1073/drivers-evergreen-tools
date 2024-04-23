@@ -58,30 +58,18 @@ def azure():
 def main():
     print("Bootstrapping OIDC config")
 
-    # Get the secrets.
-    secrets = get_secrets()
-
     # Write the oidc orchestration file.
     provider1_info = {
         "authNamePrefix": "test1",
-        "issuer": secrets['oidc_issuer_1_uri'],
-        "clientId": DEFAULT_CLIENT,
-        "audience": DEFAULT_CLIENT,
+        "issuer": "https://oidc.eks.us-west-1.amazonaws.com/id/1466597F373EB40EDF1FD3C151D10CDB",
+        "clientId": "system:serviceaccount:drivers-python:test-acct",
+        "audience": "sts.amazonaws.com",
         "authorizationClaim": "foo",
         "requestScopes": ["fizz", "buzz"],
         "matchPattern": "test_user1"
     }
-    provider2_info = {
-        "authNamePrefix": "test2",
-        "issuer": secrets['oidc_issuer_2_uri'],
-        "clientId": DEFAULT_CLIENT,
-        "audience": DEFAULT_CLIENT,
-        "authorizationClaim": "bar",
-        "supportsHumanFlows": False,
-        "requestScopes": ["foo", "bar"],
-    }
 
-    providers = json.dumps([provider1_info, provider2_info], separators=(',',':'))
+    providers = json.dumps([provider1_info], separators=(',',':'))
 
     data = {
         "id": "oidc-repl0",
@@ -104,10 +92,7 @@ def main():
         }]
     }
 
-    provider2_info['matchPattern'] = 'test_user2'
-    del provider2_info['supportsHumanFlows']
-
-    providers = [provider1_info, provider2_info]
+    providers = [provider1_info]
     providers = json.dumps(providers, separators=(',',':'))
     data['members'].append({
         "procParams": {
