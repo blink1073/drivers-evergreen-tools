@@ -11,7 +11,7 @@ assert(admin.auth(adminUser, "pwd123"));
 
 console.log("Setting up User");
 const authorizationPrefix = process.env['AZUREOIDC_AUTHPREFIX'] || 'test1';
-const authorizationClaim = process.env['AZUREOIDC_AUTHCLAIM'] || 'readWrite';
+const authorizationClaim = process.env['AZUREOIDC_AUTHCLAIM'] || 'system:serviceaccount:default:oidc-test-sa';
 const role1Name = authorizationPrefix + '/' + authorizationClaim;
 const role2Name = 'test2/readWrite';
 
