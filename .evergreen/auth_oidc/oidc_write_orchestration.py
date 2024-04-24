@@ -79,8 +79,8 @@ def main():
         "password": "pwd123",
         "members": [{
             "procParams": {
-                "ipv6": "NO_IPV6" not in os.environ,
-                "bind_ip": "0.0.0.0,::1",
+                "ipv6": False,
+                "bind_ip": "127.0.0.0,::1",
                 "logappend": True,
                 "port": 27017,
                 "setParameter": {

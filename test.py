@@ -21,8 +21,8 @@ apt-get install -y vim lsof git python3 python3-venv curl
 cd
 git clone https://github.com/blink1073/drivers-evergreen-tools.git
 cd drivers-evergreen-tools/
-git fetch origin test-eks
-git checkout test-eks
+git fetch origin test-gke
+git checkout test-gke
 cd ./.evergreen
 pushd auth_oidc
 . ./activate-authoidcvenv.sh
