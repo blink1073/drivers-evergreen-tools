@@ -28,7 +28,7 @@ pushd auth_oidc
 . ./activate-authoidcvenv.sh
 python oidc_write_orchestration.py
 popd
-MONGODB_VERSION=7.0 TOPOLOGY=replica_set ORCHESTRATION_FILE=auth-oidc.json bash run-orchestration.sh
+MONGODB_VERSION=7.0 TOPOLOGY=server ORCHESTRATION_FILE=auth-oidc.json bash run-orchestration.sh
 export URI="mongodb://127.0.0.1:27017/?directConnection=true"
 ../mongodb/bin/mongosh -f ./auth_oidc/setup_oidc.js "$URI&serverSelectionTimeoutMS=10000"
 '''

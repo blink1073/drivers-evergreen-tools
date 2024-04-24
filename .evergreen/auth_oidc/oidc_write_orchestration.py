@@ -77,41 +77,20 @@ def main():
         "login": "bob",
         "name": "mongod",
         "password": "pwd123",
-        "members": [{
-            "procParams": {
-                "ipv6": False,
-                "bind_ip": "127.0.0.0,::1",
-                "logappend": True,
-                "port": 27017,
-                "setParameter": {
-                    "enableTestCommands": 1,
-                    "authenticationMechanisms": "SCRAM-SHA-1,SCRAM-SHA-256,MONGODB-OIDC",
-                    "oidcIdentityProviders": providers
-                }
-            }
-        }]
-    }
-
-    providers = [provider1_info]
-    providers = json.dumps(providers, separators=(',',':'))
-    data['members'].append({
         "procParams": {
             "ipv6": False,
-            "bind_ip": "127.0.0.0,::1",
+            "bind_ip": "127.0.0.1,::1",
             "logappend": True,
-            "port": 27018,
+            "port": 27017,
             "setParameter": {
                 "enableTestCommands": 1,
                 "authenticationMechanisms": "SCRAM-SHA-1,SCRAM-SHA-256,MONGODB-OIDC",
                 "oidcIdentityProviders": providers
             }
-        },
-        "rsParams": {
-            "priority": 0
         }
-    })
+    }
 
-    orch_file = os.path.abspath(os.path.join(HERE, '..', 'orchestration', 'configs', 'replica_sets', 'auth-oidc.json'))
+    orch_file = os.path.abspath(os.path.join(HERE, '..', 'orchestration', 'configs', 'servers', 'auth-oidc.json'))
     with open(orch_file, 'w') as fid:
         json.dump(data, fid, indent=4)
     print(f"Wrote OIDC config to {orch_file}")
