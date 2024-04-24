@@ -61,9 +61,9 @@ def main():
     # Write the oidc orchestration file.
     provider1_info = {
         "authNamePrefix": "test1",
-        "issuer": "https://eastus.oic.prod-aks.azure.com/c96563a8-841b-4ef9-af16-33548de0c958/6f427304-facf-4098-a3de-e24dcb798284/",
-        "clientId": "system:serviceaccount:default:oidc-test-sa",
-        "audience": "api://AzureADTokenExchange",
+        "issuer": "https://container.googleapis.com/v1/projects/devprod-drivers/locations/us-central1/clusters/drivers-test-oidc-2",
+        "clientId": "system:serviceaccount:drivers-python:default",
+        "audience": "https://container.googleapis.com/v1/projects/devprod-drivers/locations/us-central1/clusters/drivers-test-oidc-2",
         "useAuthorizationClaim": False,
         "requestScopes": ["fizz", "buzz"],
         "matchPattern": "test_user1"

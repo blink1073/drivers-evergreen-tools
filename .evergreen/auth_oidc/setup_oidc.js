@@ -12,7 +12,7 @@ assert(admin.auth(adminUser, "pwd123"));
 
 console.log("Setting up User");
 conn.getDB('$external').runCommand({
-    createUser: 'test1/system:serviceaccount:default:oidc-test-sa',
+    createUser: 'test1/system:serviceaccount:drivers-python:default',
     roles: [{role: 'readWriteAnyDatabase', db: 'admin'}]
 });
 
