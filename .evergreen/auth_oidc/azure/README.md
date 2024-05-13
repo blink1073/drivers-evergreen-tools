@@ -110,5 +110,5 @@ An example task group would look like:
           - ${DRIVERS_TOOLS}/.evergreen/auth_oidc/azure/teardown.sh
     - func: other teardown function
   tasks:
-    - oidc-auth-test-azure-latest
+    - oidc-auth-test-azure
 ```
