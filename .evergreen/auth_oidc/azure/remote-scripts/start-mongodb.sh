@@ -6,7 +6,7 @@ set -o pipefail
 source env.sh
 
 # Run Mongo Orchestration with OIDC Enabled
-export MONGODB_VERSION=8.0
+export MONGODB_VERSION=${MONGODB_VERSION:-7.0}
 export TOPOLOGY=server
 export ORCHESTRATION_FILE=auth-oidc.json
 export DRIVERS_TOOLS=$HOME/drivers-evergreen-tools
