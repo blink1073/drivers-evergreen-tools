@@ -42,6 +42,7 @@ SCRIPT_DIR=$(dirname ${BASH_SOURCE:-$0})
 # explicitly invoke Bash as a subshell here when running `find_python3`.
 echo "Finding Python3 binary..."
 PYTHON="$(bash -c ". $SCRIPT_DIR/find-python3.sh && find_python3 2>/dev/null")"
+echo $PYTHON
 echo "Finding Python3 binary... done."
 
 # Set up the mongo orchestration config.

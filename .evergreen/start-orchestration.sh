@@ -31,6 +31,7 @@ cd "$MONGO_ORCHESTRATION_HOME"
 if [[ -z "${PYTHON:-}" ]]; then
   echo "Finding Python3 binary..."
   PYTHON="$(find_python3 2>/dev/null)"
+  echo $PYTHON
   echo "Finding Python3 binary... done."
 else
   # May have already been found by run-orchestration.sh. Avoid redundant lookup.
