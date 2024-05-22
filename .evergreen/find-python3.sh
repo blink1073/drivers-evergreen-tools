@@ -56,6 +56,11 @@ is_python3() (
     return 1
   fi
 
+  if ! $("$bin" -c "import sys; exit(sys.version_info[0] == 3 and sys.version_info[1] < 8)"); then
+    echo "Detected Python older than 3.8. Skipping due to version being EOL."
+    return 1
+  fi
+
   # Evaluate result of this function.
   # Note: Python True (1) and False (0) is treated as fail (1) and success (0)
   # by Bash; therefore `is_python3` returns "true" when `v < 3` is false.
