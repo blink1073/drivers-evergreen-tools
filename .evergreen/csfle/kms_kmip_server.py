@@ -37,7 +37,8 @@ def main():
     database_seed_path = os.path.join(
             drivers_evergreen_tools, ".evergreen", "csfle", "pykmip.db.bak")
     shutil.copy(database_seed_path, database_path)
-
+    print(args.cert_file)
+    print(args.ca_file)
     server = KmipServer(
         hostname=HOSTNAME,
         port=args.port,
