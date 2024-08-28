@@ -21,6 +21,13 @@ fi
 . ./stop-servers.sh
 . ./activate-kmstlsvenv.sh
 
+echo "CERT_FILES:"
+echo "ca_file: $CSFLE_TLS_CA_FILE"
+echo "cert_file: $CSFLE_TLS_CERT_FILE"
+echo
+
+exit 1
+
 # The -u options forces the stdout and stderr streams to be unbuffered.
 # TMPDIR is required to avoid "AF_UNIX path too long" errors.
 echo "Starting KMIP Server..."
