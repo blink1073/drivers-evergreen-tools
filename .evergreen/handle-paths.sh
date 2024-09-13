@@ -49,12 +49,12 @@ esac
 # Handle .env files
 if [ -f "$DRIVERS_TOOLS/.env" ]; then
   echo "Reading $DRIVERS_TOOLS/.env file"
-  export $(grep -v '^#' "$DRIVERS_TOOLS/.env" | xargs)
+  export $(grep -v '^#' "$DRIVERS_TOOLS/.env" | xargs -0)
 fi
 
 if [ -f "$SCRIPT_DIR/.env" ]; then
   echo "Reading $SCRIPT_DIR/.env file"
-  export $(grep -v '^#' "$SCRIPT_DIR/.env" | xargs)
+  export $(grep -v '^#' "$SCRIPT_DIR/.env" | xargs -0)
 fi
 
 MONGODB_BINARIES=${MONGODB_BINARIES:-${DRIVERS_TOOLS}/mongodb/bin}
