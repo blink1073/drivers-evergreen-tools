@@ -66,6 +66,7 @@ case $NAME in
       esac
 esac
 
+set -x
 # Set up variables for Go.
 GOROOT=${GOROOT:-/opt/golang/go1.22}
 if [ "${OS:-}" == "Windows_NT" ]; then
