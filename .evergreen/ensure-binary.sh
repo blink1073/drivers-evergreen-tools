@@ -18,10 +18,10 @@ if [ -z "$DRIVERS_TOOLS" ]; then
   return 1
 fi
 
-# if command -v $NAME &> /dev/null; then
-#   echo "$NAME found in PATH!"
-#   return 0
-# fi
+if command -v $NAME &> /dev/null; then
+  echo "$NAME found in PATH!"
+  return 0
+fi
 
 OS_NAME=$(uname -s | tr '[:upper:]' '[:lower:]')
 MARCH=$(uname -m | tr '[:upper:]' '[:lower:]')
@@ -71,23 +71,39 @@ if [ -z "$URL" ]; then
   return 1
 fi
 
+# Set up variables for Go.
+GOROOT=${GOROOT:-/opt/golang/go1.22}
+if [ "${OS:-}" == "Windows_NT" ]; then
+  GOROOT=${GOROOT:-C:/golang/go1.22}
+fi
+GOBIN=${DRIVERS_TOOLS}/.bin
+GOCACHE=${DRIVERS_TOOLS}/.go-cache
+
 echo "Installing $NAME..."
 
-if [ "$NAME" != "gcloud" ]; then
-  mkdir -p ${DRIVERS_TOOLS}/.bin
-  TARGET=${DRIVERS_TOOLS}/.bin/$NAME
-  retry_with_backoff curl -L -s $URL -o $TARGET
-  chmod +x $TARGET
-
-else
-  # Google Cloud needs special handling: we need a symlink to the source location.
-  pushd /tmp
-  rm -rf google-cloud-sdk
-  FNAME=/tmp/google-cloud-sdk.tgz
-  retry_with_backoff curl -L -s $URL -o $FNAME
-  tar xfz $FNAME
-  popd
-  ln -s /tmp/google-cloud-sdk/bin/gcloud $DRIVERS_TOOLS/.bin/gcloud
-fi
+case $NAME in
+  gcloud)
+    # Google Cloud needs special handling: we need a symlink to the source location.
+    pushd /tmp
+    rm -rf google-cloud-sdk
+    FNAME=/tmp/google-cloud-sdk.tgz
+    retry_with_backoff curl -L -s $URL -o $FNAME
+    tar xfz $FNAME
+    popd
+    ln -s /tmp/google-cloud-sdk/bin/gcloud $DRIVERS_TOOLS/.bin/gcloud
+    ;;
+  task)
+    # Task is installed using "go install".
+    export PATH="${GOROOT}/bin:$PATH"
+    env GOBIN=${GOBIN} GOCACHE=${GOCACHE} go install github.com/go-task/task/v3/cmd/task@latest
+    ;;
+  *)
+    # Download directly using curl.
+    mkdir -p ${DRIVERS_TOOLS}/.bin
+    TARGET=${DRIVERS_TOOLS}/.bin/$NAME
+    retry_with_backoff curl -L -s $URL -o $TARGET
+    chmod +x $TARGET
+    ;;
+esac
 
 echo "Installing $NAME... done."

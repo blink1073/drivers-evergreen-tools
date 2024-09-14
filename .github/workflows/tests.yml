@@ -71,3 +71,18 @@ jobs:
       - name: Lint
         working-directory: .evergreen/github_app
         run: npm run lint
+
+  taskfile:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - "ubuntu-latest"
+          - "windows-latest"
+          - "macos-latest"
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install task
+      run: ./.evergreen/ensure-binary.sh task
+    - name: Print task version
+      run: task --version
