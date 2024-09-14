@@ -66,11 +66,6 @@ case $NAME in
       esac
 esac
 
-if [ -z "$URL" ]; then
-  echo "Unsupported for $NAME: $OS_NAME-$MARCH"
-  return 1
-fi
-
 # Set up variables for Go.
 GOROOT=${GOROOT:-/opt/golang/go1.22}
 if [ "${OS:-}" == "Windows_NT" ]; then
@@ -84,6 +79,10 @@ echo "Installing $NAME..."
 case $NAME in
   gcloud)
     # Google Cloud needs special handling: we need a symlink to the source location.
+    if [ -z "$URL" ]; then
+      echo "Unsupported for $NAME: $OS_NAME-$MARCH"
+      return 1
+    fi
     pushd /tmp
     rm -rf google-cloud-sdk
     FNAME=/tmp/google-cloud-sdk.tgz
@@ -99,6 +98,10 @@ case $NAME in
     ;;
   *)
     # Download directly using curl.
+    if [ -z "$URL" ]; then
+      echo "Unsupported for $NAME: $OS_NAME-$MARCH"
+      return 1
+    fi
     mkdir -p ${DRIVERS_TOOLS}/.bin
     TARGET=${DRIVERS_TOOLS}/.bin/$NAME
     retry_with_backoff curl -L -s $URL -o $TARGET
