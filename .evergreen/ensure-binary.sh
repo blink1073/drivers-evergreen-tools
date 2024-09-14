@@ -97,6 +97,7 @@ case $NAME in
     ;;
   task)
     # Task is installed using "go install".
+    go version
     env GOBIN=${GOBIN} GOCACHE=${GOCACHE} go install github.com/go-task/task/v3/cmd/task@latest
     ;;
   *)
