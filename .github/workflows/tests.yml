@@ -82,6 +82,7 @@ jobs:
           - "macos-latest"
     steps:
     - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
     - name: Install task
       run: . ./.evergreen/ensure-binary.sh task
     - name: Print task version
