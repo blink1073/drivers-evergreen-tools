@@ -68,13 +68,13 @@ esac
 
 set -x
 # Set up variables for Go and ensure go is on the path.
-if command -v go &> /dev/null; then
+if [ -z "${GOROOT:-}" ]; then
   GOROOT=${GOROOT:-/opt/golang/go1.22}
   if [ "${OS:-}" == "Windows_NT" ]; then
     GOROOT=${GOROOT:-C:/golang/go1.22}
   fi
-  export PATH="${GOROOT}/bin:$PATH"
 fi
+export PATH="${GOROOT}/bin:$PATH"
 GOBIN=${DRIVERS_TOOLS}/.bin
 GOCACHE=${DRIVERS_TOOLS}/.go-cache
 
