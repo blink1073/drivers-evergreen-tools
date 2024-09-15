@@ -519,7 +519,7 @@ functions:
               . ./.evergreen/ensure-binary.sh gcloud
               gcloud --version
               . ./.evergreen/ensure-binary.sh kubectl
-              kubectl version
+              which kubectl
               ;;
           esac
 
