@@ -1222,9 +1222,9 @@ axes:
         display_name: "macOS 11"
         run_on: macos-11
 
-      - id: windows-64-vsMulti-small
+      - id: windows-vsCurrent-small
         display_name: "Windows 64"
-        run_on: windows-64-vsMulti-small
+        run_on: windows-vsCurrent-small
 
   # OSes that support versions of MongoDB>=7.0 with SSL.
   - id: os-requires-70

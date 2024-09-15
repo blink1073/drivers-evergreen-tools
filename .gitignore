@@ -118,6 +118,7 @@ mo-expansion.sh
 .env
 .bin
 .kube
+.go-cache
 
 # Azure functions.
 .python_packages/
