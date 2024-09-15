@@ -68,6 +68,7 @@ esac
 
 set -x
 # Set up variables for Go and ensure go is on the path.
+go version || true
 if ! command -v go &> /dev/null; then
   GOROOT=${GOROOT:-/opt/golang/go1.22}
   if [ "${OS:-}" == "Windows_NT" ]; then
