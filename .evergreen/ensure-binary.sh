@@ -66,14 +66,12 @@ case $NAME in
       esac
 esac
 
-set -x
 # Set up variables for Go and ensure go is on the path.
-go version || true
-if ! command -v go &> /dev/null; then
-  GOROOT=${GOROOT:-/opt/golang/go1.22}
-  if [ "${OS:-}" == "Windows_NT" ]; then
-    GOROOT=${GOROOT:-C:/golang/go1.22}
-  fi
+if [ -f /opt/golang/go1.22 ]; then
+  GOROOT=/opt/golang/go1.22
+  export PATH="${GOROOT}/bin:$PATH"
+elif [ -f /cygdrive/c/golang/go1.22 ]; then
+  GOROOT=/cygdrive/c/golang/go1.22
   export PATH="${GOROOT}/bin:$PATH"
 fi
 GOBIN=${DRIVERS_TOOLS}/.bin

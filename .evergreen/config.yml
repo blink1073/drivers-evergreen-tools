@@ -514,6 +514,9 @@ functions:
           PATH=.bin:$PATH
           . ./.evergreen/ensure-binary.sh task
           task --version
+          if [ $OS == "Windows_NT" ]; then
+            exit 0
+          fi
           case $(uname -m) in
             aarch64 | x86_64 | arm64)
               . ./.evergreen/ensure-binary.sh gcloud
@@ -1215,9 +1218,9 @@ axes:
         display_name: "RHEL 8"
         run_on: rhel87-small
 
-      - id: macos-1100
-        display_name: "macOS 11.00"
-        run_on: macos-1100
+      - id: macos-11
+        display_name: "macOS 11"
+        run_on: macos-11
 
       - id: windows-64-vsMulti-small
         display_name: "Windows 64"
@@ -1239,6 +1242,10 @@ axes:
       - id: amazon-2023-x64
         display_name: "Amazon Linux 2023 x64"
         run_on: amazon2023.0-small
+
+      - id: macos-14
+        display_name: "macOS 14 arm64"
+        run_on: macos-14-arm64
 
       - id: rhel9
         display_name: "RHEL 9.0 x64"
@@ -1267,11 +1274,11 @@ axes:
 
       - id: rhel87-power8
         display_name: "RHEL 8 (POWER8)"
-        run_on: rhel81-power8-small
+        run_on: rhel8-power-small
 
       - id: rhel83-zseries-small
         display_name: "RHEL8 (zSeries)"
-        run_on: rhel83-zseries-small
+        run_on: rhel8-zseries-small
 
   - id: topology
     display_name: Topology
