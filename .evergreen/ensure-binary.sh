@@ -73,7 +73,7 @@ if [ -d /opt/golang/go1.22 ]; then
   export PATH="${GOROOT}/bin:$PATH"
 elif [ -d /cygdrive/c/golang/go1.22 ]; then
   export GOROOT=C:/golang/go1.22
-  export PATH="${GOROOT}/bin:$PATH"
+  export PATH="/cygdrive/c/golang/go1.22/bin:$PATH"
 fi
 GOBIN=${DRIVERS_TOOLS}/.bin
 GOCACHE=${DRIVERS_TOOLS}/.go-cache
