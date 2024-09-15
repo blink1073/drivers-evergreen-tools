@@ -9,43 +9,43 @@ on:
       - "master"
 
 jobs:
-  # tests:
-  #   name: "Tests"
-  #   runs-on: ${{ matrix.os }}
+  tests:
+    name: "Tests"
+    runs-on: ${{ matrix.os }}
 
-  #   strategy:
-  #     matrix:
-  #       os:
-  #         - "ubuntu-latest"
-  #         - "windows-latest"
-  #         - "macos-latest"
-  #       mongodb-version:
-  #         - "7.0"
-  #       topology:
-  #         - "server"
-  #         - "replica_set"
-  #         - "sharded_cluster"
-  #       auth:
-  #         - "noauth"
-  #         - "auth"
-  #       ssl:
-  #         - "nossl"
-  #         - "ssl"
+    strategy:
+      matrix:
+        os:
+          - "ubuntu-latest"
+          - "windows-latest"
+          - "macos-latest"
+        mongodb-version:
+          - "7.0"
+        topology:
+          - "server"
+          - "replica_set"
+          - "sharded_cluster"
+        auth:
+          - "noauth"
+          - "auth"
+        ssl:
+          - "nossl"
+          - "ssl"
 
-  #   steps:
-  #     - name: "Checkout"
-  #       uses: "actions/checkout@v4"
-  #       with:
-  #         fetch-depth: 2
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@v4"
+        with:
+          fetch-depth: 2
 
-  #     - id: setup-mongodb
-  #       name: "Test GitHub Action"
-  #       uses: ./
-  #       with:
-  #         version: ${{ matrix.mongodb-version }}
-  #         topology: ${{ matrix.topology }}
-  #         auth: ${{ matrix.auth }}
-  #         ssl: ${{ matrix.ssl }}
+      - id: setup-mongodb
+        name: "Test GitHub Action"
+        uses: ./
+        with:
+          version: ${{ matrix.mongodb-version }}
+          topology: ${{ matrix.topology }}
+          auth: ${{ matrix.auth }}
+          ssl: ${{ matrix.ssl }}
 
   pre-commit:
     runs-on: ubuntu-latest
@@ -71,21 +71,3 @@ jobs:
       - name: Lint
         working-directory: .evergreen/github_app
         run: npm run lint
-
-  taskfile:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os:
-          - "ubuntu-latest"
-          - "windows-latest"
-          - "macos-latest"
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-go@v5
-      with:
-        go-version: '1.22'
-    - name: Install task
-      run: ./.evergreen/ensure-binary.sh task
-    - name: Print task version
-      run: .bin/task --version

@@ -503,6 +503,28 @@ functions:
           cd ${PROJECT_DIRECTORY}
           make test
 
+  "run ensure binary tests":
+    - command: shell.exec
+      type: test
+      params:
+        shell: bash
+        script: |-
+          set -o errexit
+          cd ${DRIVERS_TOOLS}
+          PATH=.bin:$PATH
+          . ensure-binary.sh task
+          task --version
+          case $(uname -m) in
+            aarch64)
+            x86_64)
+            arm64)
+              . ensure-binary.sh gcloud
+              gcloud --version
+              . ensure-binary.sh kubectl
+              kubectl version
+              ;;
+          esac
+
   "teardown assets":
     - command: subprocess.exec
       params:
@@ -911,6 +933,11 @@ tasks:
       tags: ["latest", "oidc"]
       commands:
         - func: "run oidc gcp test"
+
+    - name: "test-ensure-binary"
+      tags: ["pr"]
+      commands:
+        - func: "run ensure binary test"
 
     - name: "test-oidc-k8s-atlas"
       tags: ["latest", "oidc"]
@@ -1363,6 +1390,7 @@ buildvariants:
      - name: "test-3.6-replica_set"
      - name: "test-3.6-sharded_cluster"
      - name: "test-3.6-standalone"
+     - name: "test-ensure-binary"
 
 - matrix_name: "tests-os-requires-50"
   matrix_spec: {"os-requires-50": "*", auth: "*", ssl: "*" }
@@ -1380,6 +1408,7 @@ buildvariants:
      - name: "test-5.0-replica_set"
      - name: "test-5.0-sharded_cluster"
      - name: "test-5.0-standalone"
+     - name: "test-ensure-binary"
 
 - matrix_name: "tests-os-requires-70"
   matrix_spec: {"os-requires-70": "*", auth: "*", ssl: "*" }
@@ -1394,6 +1423,7 @@ buildvariants:
      - name: "test-7.0-replica_set"
      - name: "test-7.0-sharded_cluster"
      - name: "test-7.0-standalone"
+     - name: "test-ensure-binary"
 
 # Storage Engine Tests on Ubuntu 20.04
 - matrix_name: "tests-storage-engines"
