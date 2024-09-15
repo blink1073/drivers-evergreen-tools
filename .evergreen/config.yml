@@ -525,6 +525,9 @@ functions:
               which kubectl
               ;;
           esac
+          # Generate a test results file
+          cd ${PROJECT_DIRECTORY}
+          make test
 
   "teardown assets":
     - command: subprocess.exec
