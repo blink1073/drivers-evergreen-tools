@@ -1392,8 +1392,8 @@ buildvariants:
      - name: "test-3.6-standalone"
   rules:
     - if:
-        auth: auth
-        ssl: ssl
+        auth: "auth"
+        ssl: "ssl"
       then:
         add_tasks: ["test-ensure-binary"]
 
@@ -1415,8 +1415,8 @@ buildvariants:
      - name: "test-5.0-standalone"
   rules:
     - if:
-        auth: auth
-        ssl: ssl
+        auth: "auth"
+        ssl: "ssl"
       then:
         add_tasks: ["test-ensure-binary"]
 
@@ -1435,8 +1435,8 @@ buildvariants:
      - name: "test-7.0-standalone"
   rules:
     - if:
-        auth: auth
-        ssl: ssl
+        auth: "auth"
+        ssl: "ssl"
       then:
         add_tasks: ["test-ensure-binary"]
 
