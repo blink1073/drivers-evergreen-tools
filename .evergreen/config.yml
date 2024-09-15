@@ -1394,6 +1394,7 @@ buildvariants:
     - if:
         auth: "auth"
         ssl: "ssl"
+        os-fully-featured: "*"
       then:
         add_tasks: ["test-ensure-binary"]
 
@@ -1417,6 +1418,7 @@ buildvariants:
     - if:
         auth: "auth"
         ssl: "ssl"
+        os-requires-50: "*"
       then:
         add_tasks: ["test-ensure-binary"]
 
@@ -1437,6 +1439,7 @@ buildvariants:
     - if:
         auth: "auth"
         ssl: "ssl"
+        os-requires-70: "*"
       then:
         add_tasks: ["test-ensure-binary"]
 
