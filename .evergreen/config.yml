@@ -512,15 +512,15 @@ functions:
           set -o errexit
           cd ${DRIVERS_TOOLS}
           PATH=.bin:$PATH
-          . ensure-binary.sh task
+          . ./.evergreen/ensure-binary.sh task
           task --version
           case $(uname -m) in
             aarch64)
             x86_64)
             arm64)
-              . ensure-binary.sh gcloud
+              . ./.evergreen/ensure-binary.sh gcloud
               gcloud --version
-              . ensure-binary.sh kubectl
+              . ./.evergreen/ensure-binary.sh kubectl
               kubectl version
               ;;
           esac
@@ -1390,7 +1390,12 @@ buildvariants:
      - name: "test-3.6-replica_set"
      - name: "test-3.6-sharded_cluster"
      - name: "test-3.6-standalone"
-     - name: "test-ensure-binary"
+  rules:
+    - if:
+        auth: auth
+        ssl: ssl
+      then:
+        add_task: ["test-ensure-binary"]
 
 - matrix_name: "tests-os-requires-50"
   matrix_spec: {"os-requires-50": "*", auth: "*", ssl: "*" }
@@ -1408,7 +1413,12 @@ buildvariants:
      - name: "test-5.0-replica_set"
      - name: "test-5.0-sharded_cluster"
      - name: "test-5.0-standalone"
-     - name: "test-ensure-binary"
+  rules:
+    - if:
+        auth: auth
+        ssl: ssl
+      then:
+        add_task: ["test-ensure-binary"]
 
 - matrix_name: "tests-os-requires-70"
   matrix_spec: {"os-requires-70": "*", auth: "*", ssl: "*" }
@@ -1423,7 +1433,12 @@ buildvariants:
      - name: "test-7.0-replica_set"
      - name: "test-7.0-sharded_cluster"
      - name: "test-7.0-standalone"
-     - name: "test-ensure-binary"
+  rules:
+    - if:
+        auth: auth
+        ssl: ssl
+      then:
+        add_task: ["test-ensure-binary"]
 
 # Storage Engine Tests on Ubuntu 20.04
 - matrix_name: "tests-storage-engines"
