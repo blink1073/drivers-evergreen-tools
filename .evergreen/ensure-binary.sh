@@ -67,6 +67,7 @@ case $NAME in
 esac
 
 # Set up variables for Go and ensure go is on the path.
+set -x
 if [ -d /opt/golang/go1.22 ]; then
   export GOROOT=/opt/golang/go1.22
   export PATH="${GOROOT}/bin:$PATH"
