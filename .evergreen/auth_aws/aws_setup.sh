@@ -22,6 +22,7 @@ fi
 . ./activate-authawsvenv.sh
 source secrets-export.sh
 
+set -x
 if [ "$1" == "web-identity" ]; then
     export AWS_WEB_IDENTITY_TOKEN_FILE="./token_file.txt"
 fi
