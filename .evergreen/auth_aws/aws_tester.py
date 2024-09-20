@@ -155,6 +155,8 @@ def setup_web_identity():
         IDP_RSA_KEY=CONFIG[get_key("iam_web_identity_rsa_key")],
         AWS_WEB_IDENTITY_TOKEN_FILE=token_file
     )
+    print(env)
+    print(os.environ)
 
     ret = run(['lib/aws_handle_oidc_creds.py', 'token'], env)
     if ret != 0:
