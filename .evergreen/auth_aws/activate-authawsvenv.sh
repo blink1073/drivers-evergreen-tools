@@ -40,7 +40,7 @@ activate_authawsvenv() {
     local packages=(
       "boto3~=1.28.0"
       "pyop~=3.4.0"
-      "pymongo[aws]<4.9"
+      "pymongo[aws]~=4.0"
     )
 
     python -m pip install -q -U "${packages[@]}" || {
