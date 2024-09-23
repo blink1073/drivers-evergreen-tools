@@ -93,6 +93,9 @@ def setup_ecs():
     # Set up commands.
     mongo_binaries = os.environ['MONGODB_BINARIES']
     project_dir = os.environ['PROJECT_DIRECTORY']
+    print('PROJECT', project_dir)
+    print(os.listdir(project_dir))
+    sys.exit(1)
     base_command = f"{sys.executable} -u  lib/container_tester.py"
     run_prune_command = f"{base_command} -v remote_gc_services --cluster {CONFIG[get_key('iam_auth_ecs_cluster')]}"
 
