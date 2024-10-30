@@ -108,3 +108,4 @@ if ! curl http://localhost:8889/ --silent --show-error --max-time 120 --fail; th
   exit 1
 fi
 sleep 5
+cat $MONGO_ORCHESTRATION_HOME/out.log
