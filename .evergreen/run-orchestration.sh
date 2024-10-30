@@ -121,6 +121,7 @@ echo "ORCHESTRATION_FILE=$ORCHESTRATION_FILE"
 
 # Handle modifications to the orchestration file.
 ORCHESTRATION_FILE=$($PYTHON $MONGO_ORCHESTRATION_HOME/handle_orchestration_file.py)
+export ORCHESTRATION_FILE
 
 # If running on Docker, update the orchestration file to be docker-friendly.
 if [ -n "$DOCKER_RUNNING" ]; then
