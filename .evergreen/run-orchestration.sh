@@ -119,12 +119,8 @@ else
 fi
 echo "ORCHESTRATION_FILE=$ORCHESTRATION_FILE"
 
-# Copy the orchestration file so we can override it.
-cp -f "$ORCHESTRATION_FILE" "$MONGO_ORCHESTRATION_HOME/config.json"
-ORCHESTRATION_FILE="$MONGO_ORCHESTRATION_HOME/config.json"
-
-# Handle absolute path.
-perl -p -i -e "s|ABSOLUTE_PATH_REPLACEMENT_TOKEN|$(echo $DRIVERS_TOOLS | sed 's/\\/\\\\\\\\/g')|g" $ORCHESTRATION_FILE
+# Handle modifications to the orchestration file.
+ORCHESTRATION_FILE=$($PYTHON $MONGO_ORCHESTRATION_HOME/handle_orchestration_file.py)
 
 # If running on Docker, update the orchestration file to be docker-friendly.
 if [ -n "$DOCKER_RUNNING" ]; then
@@ -172,8 +168,3 @@ cat <<EOT >$DRIVERS_TOOLS/results.json
 ]}
 
 EOT
-
-# Set the requireApiVersion parameter
-if [ ! -z "$REQUIRE_API_VERSION" ]; then
-  $MONGODB_BINARIES/mongosh $URI $MONGO_ORCHESTRATION_HOME/require-api-version.js
-fi

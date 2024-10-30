@@ -693,12 +693,32 @@ tasks:
         - func: "run tests"
 
     - name: "test-8.0-standalone-require-api"
-      tags: ["8.0", "sharded_cluster"]
+      tags: ["8.0", "standalone", "pr"]
       commands:
         - func: "bootstrap mongo-orchestration"
           vars:
             VERSION: "8.0"
             TOPOLOGY: "server"
+            REQUIRE_API_VERSION: "1"
+        - func: "run tests"
+
+    - name: "test-8.0-replica_set-require-api"
+      tags: ["8.0", "replica_set", "pr"]
+      commands:
+        - func: "bootstrap mongo-orchestration"
+          vars:
+            VERSION: "8.0"
+            TOPOLOGY: "replica_set"
+            REQUIRE_API_VERSION: "1"
+        - func: "run tests"
+
+    - name: "test-8.0-sharded_cluster-require-api"
+      tags: ["8.0", "sharded_cluster", "pr"]
+      commands:
+        - func: "bootstrap mongo-orchestration"
+          vars:
+            VERSION: "8.0"
+            TOPOLOGY: "sharded_cluster"
             REQUIRE_API_VERSION: "1"
         - func: "run tests"
 
@@ -1452,6 +1472,8 @@ buildvariants:
         add_tasks:
           - "test-install-binaries"
           - "test-mongodl-full"
+          - "test-8.0-sharded-require-api"
+          - "test-8.0-replica_set-require-api"
           - "test-8.0-standalone-require-api"
 
 - matrix_name: "tests-os-requires-50"
