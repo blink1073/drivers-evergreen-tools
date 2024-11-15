@@ -43,13 +43,14 @@ class HTTPServerWithTLS(http.server.HTTPServer):
             server_dir = os.path.dirname(__file__)
             cert_file = os.path.join(server_dir, "..", "x509gen", "server.pem")
             ca_file = os.path.join(server_dir, "..", "x509gen", "ca.pem")
-            self.socket = ssl.wrap_socket(
-                self.socket,
-                server_side=True,
-                certfile=cert_file,
-                ca_certs=ca_file,
-                ssl_version=ssl.PROTOCOL_TLS,
-            )
+
+            context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+            if ca_file:
+                context.load_verify_locations(ca_file)
+            if cert_file:
+                context.load_cert_chain(cert_file)
+
+            self.socket = context.wrap_socket(self.socket, server_side=True)
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
