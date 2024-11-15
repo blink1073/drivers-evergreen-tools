@@ -39,7 +39,7 @@ activate_kmstlsvenv() {
 
     local packages=(
       "boto3~=1.35.0"
-      "git+https://github.com/kevinAlbs/PyKMIP.git@DRIVERS-2659" # Add work around for DRIVERS-2659
+      "git+https://github.com/blink1073/PyKMIP.git@DRIVERS-2659" # Add work around for DRIVERS-2659 and DRIVERS-2743
       "sqlalchemy<2.0.0" # sqlalchemy.exc.InvalidRequestError: Implicitly combining column managed_objects.uid with column crypto_objects.uid under attribute 'unique_identifier'.
     )
 
