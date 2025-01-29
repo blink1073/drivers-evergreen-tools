@@ -1017,7 +1017,7 @@ def _maybe_extract_member(
         # Update the file mode in a cross-platform way.
         if os.name == "nt":
             dest = subprocess.check_output(["cygpath", "-u", str(dest)])
-        subprocess.run(["chmod", modebits, dest], check=True)
+        subprocess.run(["chmod", str(modebits), dest], check=True)
     return 1
 
 
