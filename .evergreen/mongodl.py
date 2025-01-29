@@ -25,6 +25,7 @@ import re
 import shutil
 import sqlite3
 import ssl
+import subprocess
 import sys
 import tarfile
 import textwrap
@@ -1013,7 +1014,10 @@ def _maybe_extract_member(
         _mkdir(dest.parent)
         with dest.open("wb") as outfile:
             shutil.copyfileobj(infile, outfile)
-        os.chmod(str(dest), modebits)
+        # Update the file mode in a cross-platform way.
+        if os.name == "nt":
+            dest = subprocess.check_output(["cygpath", "-u", str(dest)])
+        subprocess.run(["chmod", modebits, dest], check=True)
     return 1
 
 
