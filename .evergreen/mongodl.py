@@ -1021,7 +1021,7 @@ def _maybe_extract_member(
                 .decode("utf-8")
                 .strip()
             )
-        subprocess.run(["chmod", str(modebits), dest], check=True)
+        subprocess.run(["chmod", f"{modebits:04o}", dest], check=True)
     return 1
 
 
