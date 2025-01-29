@@ -220,8 +220,9 @@ def run(opts):
             if fname in expected:
                 crypt_shared_path = (mdb_binaries / fname).as_posix()
         assert crypt_shared_path is not None
-        crypt_text = f'CRYPT_SHARED_LIB_PATH:"{crypt_shared_path}"'
+        crypt_text = f'CRYPT_SHARED_LIB_PATH: "{crypt_shared_path}"'
         expansion_yaml.write_text(crypt_text)
+        print(f"{crypt_text=}")
         expansion_sh.write_text(crypt_text.replace(": ", "="))
 
     # Download mongosh
