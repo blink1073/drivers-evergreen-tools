@@ -1016,7 +1016,11 @@ def _maybe_extract_member(
             shutil.copyfileobj(infile, outfile)
         # Update the file mode in a cross-platform way.
         if os.name == "nt":
-            dest = subprocess.check_output(["cygpath", "-u", str(dest)])
+            dest = (
+                subprocess.check_output(["cygpath", "-u", str(dest)])
+                .decode("utf-8")
+                .strip()
+            )
         subprocess.run(["chmod", str(modebits), dest], check=True)
     return 1
 
