@@ -274,10 +274,10 @@ def main():
 
     args = parser.parse_args()
     func_name = args.func.__name__.replace("setup_", "")
-    LOGGER.info("Running aws_tester.py with %s...", func_name)
+    LOGGER.info("Running2 aws_tester.py with %s...", func_name)
     creds = args.func()
     handle_creds(creds)
-    LOGGER.info("Running aws_tester.py with %s... done.", func_name)
+    LOGGER.info("Running2 aws_tester.py with %s... done.", func_name)
 
 
 if __name__ == "__main__":
