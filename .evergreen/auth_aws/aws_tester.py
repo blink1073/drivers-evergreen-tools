@@ -235,15 +235,16 @@ def handle_creds(creds: dict):
     with (HERE / "test-env.sh").open("w", newline="\n") as fid:
         fid.write("#!/usr/bin/env bash\n\n")
         fid.write("set +x\n")
+        LOGGER.info(f"hello? {list(creds)}")
         for key, value in creds.items():
-            print("WRITING", key)
+            LOGGER.INFO("WRITING %s", key)
             if key == "USER":
-                print("USER", key)
+                LOGGER.info("USER %s", key)
             fid.write(f"export {key}={value}\n")
         fid.write(f"export MONGODB_URI={MONGODB_URI}\n")
         # USER and PASS are always exported.
         if "USER" not in creds:
-            print("Writing default user")
+            LOGGER.info("Writing default user")
             fid.write('export USER=""\n')
         if "PASS" not in creds:
             fid.write('export PASS=""\n')
@@ -276,6 +277,7 @@ def main():
     func_name = args.func.__name__.replace("setup_", "")
     LOGGER.info("Running2 aws_tester.py with %s...", func_name)
     creds = args.func()
+    LOGGER.info("HANDLING creds")
     handle_creds(creds)
     LOGGER.info("Running2 aws_tester.py with %s... done.", func_name)
 
