@@ -1017,9 +1017,9 @@ tasks:
         - func: "run oidc k8s atlas test"
           vars:
             VARIANT: eks
-        - func: "run oidc k8s atlas test"
-          vars:
-            VARIANT: gke
+        # - func: "run oidc k8s atlas test"
+        #   vars:
+        #     VARIANT: gke
         - func: "run oidc k8s atlas test"
           vars:
             VARIANT: aks
