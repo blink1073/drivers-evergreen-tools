@@ -23,7 +23,7 @@ DEFAULT_CLIENT = "0oadp0hpl7q3UIehP297"
 
 def get_secrets():
     """Get the driver secret values."""
-    secrets = root_get_secrets(["drivers/oidc"], "us-east-1", None)[0]
+    secrets = root_get_secrets(["drivers/oidc-qa-migration"], "us-east-1", None)[0]
     for key in list(secrets):
         secrets[key.lower()] = secrets[key]
     return secrets
