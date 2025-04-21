@@ -756,8 +756,9 @@ def _print_list(
 
 
 def infer_arch():
-    print("HELLO FROM INFER ARCH!")
-    return subprocess.check_output(["uname", "-m"], encoding="utf8").strip()
+    value = subprocess.check_output(["uname", "-m"], encoding="utf8").strip()
+    print("HELLO FROM INFER ARCH!", value)
+    return value
 
 
 class ExpandResult(enum.Enum):
