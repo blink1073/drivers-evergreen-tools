@@ -20,11 +20,11 @@ import hashlib
 import json
 import logging
 import os
-import platform
 import re
 import shutil
 import sqlite3
 import ssl
+import subprocess
 import sys
 import tarfile
 import textwrap
@@ -756,11 +756,7 @@ def _print_list(
 
 
 def infer_arch():
-    a = platform.machine() or platform.processor()
-    # Remap platform names to the names used for downloads
-    return {
-        "AMD64": "x86_64",
-    }.get(a, a)
+    return subprocess.check_output(["uname", "-m"], encoding="utf8").strip()
 
 
 class ExpandResult(enum.Enum):
