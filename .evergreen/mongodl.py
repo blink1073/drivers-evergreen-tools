@@ -756,6 +756,7 @@ def _print_list(
 
 
 def infer_arch():
+    print("HELLO FROM INFER ARCH!")
     return subprocess.check_output(["uname", "-m"], encoding="utf8").strip()
 
 
