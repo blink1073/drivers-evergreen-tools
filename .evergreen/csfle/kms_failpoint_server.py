@@ -50,10 +50,7 @@ class HTTPServerWithTLS(http.server.HTTPServer):
             context.verify_mode = ssl.CERT_NONE
 
             self.socket = context.wrap_socket(
-                httpd.socket,
-                server_side=True,
-                do_handshake_on_connect=False,
-                suppress_ragged_eofs=True,
+                httpd.socket, server_side=True, do_handshake_on_connect=False
             )
 
 
