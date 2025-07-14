@@ -49,7 +49,12 @@ class HTTPServerWithTLS(http.server.HTTPServer):
             context.load_cert_chain(cert_file)
             context.verify_mode = ssl.CERT_NONE
 
-            self.socket = context.wrap_socket(self.socket, server_side=True)
+            self.socket = context.wrap_socket(
+                httpd.socket,
+                server_side=True,
+                do_handshake_on_connect=False,
+                suppress_ragged_eofs=True,
+            )
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
