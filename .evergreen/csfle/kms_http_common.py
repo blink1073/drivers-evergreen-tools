@@ -151,7 +151,7 @@ def run(
     httpd.socket = context.wrap_socket(
         httpd.socket,
         server_side=True,
-        do_handshake_on_connect=False,
+        # do_handshake_on_connect=False,
         suppress_ragged_eofs=True,
     )
     print("Mock KMS Web Server Listening on port " + str(server_address[1]))
