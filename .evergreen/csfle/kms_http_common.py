@@ -140,13 +140,16 @@ def run(
 
     httpd = server_class(server_address, handler_class)
 
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-    context.load_verify_locations(ca_file)
-    context.load_cert_chain(cert_file)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+
     if cert_required:
         context.verify_mode = ssl.CERT_REQUIRED
     else:
         context.verify_mode = ssl.CERT_NONE
+
+    context.load_cert_chain(certfile=cert_file)
+    if cert_required and ca_file:
+        context.load_verify_locations(cafile=ca_file)
 
     httpd.socket = context.wrap_socket(httpd.socket, server_side=True)
     print("Mock KMS Web Server Listening on port " + str(server_address[1]))
