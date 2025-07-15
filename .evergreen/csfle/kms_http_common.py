@@ -148,9 +148,7 @@ def run(
     else:
         context.verify_mode = ssl.CERT_NONE
 
-    httpd.socket = context.wrap_socket(
-        httpd.socket, server_side=True, do_handshake_on_connect=False
-    )
+    httpd.socket = context.wrap_socket(httpd.socket, server_side=True)
     print("Mock KMS Web Server Listening on port " + str(server_address[1]))
 
     httpd.serve_forever()
