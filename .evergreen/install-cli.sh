@@ -96,7 +96,7 @@ if ! command -V uv &>/dev/null; then
 fi
 
 # Ensure there is a venv available in the script dir for backward compatibility.
-uv venv venv &>/dev/null
+uv venv venv
 [[ -d venv ]]
 
 popd >/dev/null # $SCRIPT_DIR
