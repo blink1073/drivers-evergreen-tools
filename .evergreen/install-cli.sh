@@ -14,6 +14,7 @@ SCRIPT_DIR=$(dirname ${BASH_SOURCE[0]})
 . $SCRIPT_DIR/handle-paths.sh
 
 pushd $SCRIPT_DIR >/dev/null
+set -x
 
 # First ensure we have a python binary.
 if [ -z "${DRIVERS_TOOLS_PYTHON:-}" ]; then
