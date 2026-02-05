@@ -14,6 +14,7 @@ SCRIPT_DIR=$(dirname ${BASH_SOURCE[0]})
 . $SCRIPT_DIR/handle-paths.sh
 
 pushd $SCRIPT_DIR >/dev/null
+set -x
 
 # First ensure we have a python binary.
 if [ -z "${DRIVERS_TOOLS_PYTHON:-}" ]; then
@@ -95,7 +96,7 @@ if ! command -V uv &>/dev/null; then
 fi
 
 # Ensure there is a venv available in the script dir for backward compatibility.
-uv venv venv &>/dev/null
+uv venv venv
 [[ -d venv ]]
 
 popd >/dev/null # $SCRIPT_DIR

@@ -19,4 +19,5 @@ esac
 # Install CLIs into this directory (default path for $PROJECT_ORCHESTRATION_HOME
 # and $MONGO_ORCHESTRATION_HOME) and the parent directory ($DRIVERS_TOOLS).
 bash "${SCRIPT_DIR:?}/../install-cli.sh" "${SCRIPT_DIR:?}/.."
+set -x
 bash "${SCRIPT_DIR:?}/../install-cli.sh" "${SCRIPT_DIR:?}"
