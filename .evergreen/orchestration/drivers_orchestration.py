@@ -203,7 +203,13 @@ def get_options():
             opts.orchestration_file = "auth-aws.json"
         if opts.topology == "standalone" or not opts.topology:
             opts.topology = "server"
-        if not opts.version:
+        if "GITHUB_ACTION" in os.environ:
+            # GitHub Actions consumers don't have S3 access to the private
+            # "latest" nightly builds, so default to (and alias "latest" to)
+            # the newest published release instead.
+            if not opts.version or opts.version == "latest":
+                opts.version = "latest-stable"
+        elif not opts.version:
             opts.version = "latest"
 
     if opts.verbose:

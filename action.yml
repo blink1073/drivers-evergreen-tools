@@ -2,7 +2,10 @@ name: "Set up MongoDB Cluster"
 description: "Downloads MongoDB and runs a cluster using mongo-orchestration"
 inputs:
   version:
-    description: "MongoDB version to install"
+    description: >-
+      MongoDB version to install. Defaults to "latest-stable"; "latest" is
+      also aliased to "latest-stable", since GitHub Actions runners don't
+      have access to the private "latest" nightly builds.
     required: false
   topology:
     description: "Topology of the deployment"
