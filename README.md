@@ -41,6 +41,17 @@ The `** Release Archive Creator` buildvariant is special, and does not run the "
 See also:
 https://evergreen.mongodb.com/waterfall/drivers-tools
 
+### Downloading "latest" MongoDB Binaries
+
+Requesting `MONGODB_VERSION=latest` or `latest-build` downloads an unpublished
+nightly build from a private S3 bucket, rather than the old public
+`downloads.mongodb.com`/`downloads.10gen.com` HTTP hosts. In Evergreen, this
+requires an `ec2.assume_role` step for `drivers_test_secrets_role` before the
+download step (already wired into [`bootstrap mongo-orchestration`](.evergreen/config.yml)).
+Locally, it requires an AWS profile that resolves to that same role. Any
+version other than `latest`/`latest-build` (e.g. `latest-stable`, or a pinned
+version like `8.0`) is unaffected and needs no AWS access.
+
 ## Using With GitHub Actions
 
 This repository includes a metadata file for GitHub Actions to allow downloading
@@ -61,7 +72,7 @@ The following inputs exist:
 
 | Name | Description |
 | --- | --- |
-| `version` | MongoDB version to install |
+| `version` | MongoDB version to install. Defaults to `latest-stable`; `latest` is also aliased to `latest-stable`, since GitHub Actions runners don't have access to the private S3 bucket backing the true "latest" nightly builds (see [Downloading "latest" MongoDB Binaries](#downloading-latest-mongodb-binaries) for that path). |
 | `topology` | Topology of the deployment (server, replica_set, sharded_cluster) |
 | `auth` | Whether to enable auth |
 | `ssl` | Whether to enable SSL |
