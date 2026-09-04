@@ -203,10 +203,13 @@ def get_options():
             opts.orchestration_file = "auth-aws.json"
         if opts.topology == "standalone" or not opts.topology:
             opts.topology = "server"
-        if "GITHUB_ACTION" in os.environ:
+        if "GITHUB_ACTION" in os.environ and not opts.local_atlas:
             # GitHub Actions consumers don't have S3 access to the private
             # "latest" nightly builds, so default to (and alias "latest" to)
-            # the newest published release instead.
+            # the newest published release instead. This doesn't apply to
+            # local_atlas, which pulls a mongodb/mongodb-atlas-local Docker
+            # image tag rather than downloading via mongodl, and only has a
+            # "latest" tag, not "latest-stable".
             if not opts.version or opts.version == "latest":
                 opts.version = "latest-stable"
         elif not opts.version:
