@@ -804,12 +804,6 @@ def _published_build_url(
     return data[value], checksum
 
 
-DRIVERS_TEST_SECRETS_ROLE_ARN = (
-    "arn:aws:iam::857654397073:role/drivers-test-secrets-role"
-)
-SERVER_ARTIFACTS_SECRET_VAULT = "drivers/devprod-release-infrastructure"
-
-
 def _drivers_test_secrets_creds(region: str) -> "dict|None":
     """
     Credentials for drivers-test-secrets-role.
@@ -825,7 +819,7 @@ def _drivers_test_secrets_creds(region: str) -> "dict|None":
     session = boto3.Session(profile_name=os.environ.get("AWS_PROFILE"))
     sts = session.client("sts", region_name=region)
     resp = sts.assume_role(
-        RoleArn=DRIVERS_TEST_SECRETS_ROLE_ARN, RoleSessionName="mongodl"
+        RoleArn=os.environ["DRIVERS_TEST_SECRETS_ROLE_ARN"], RoleSessionName="mongodl"
     )
     return resp["Credentials"]
 
@@ -848,14 +842,14 @@ def _server_artifacts_presigned_url(key: str, region: str = "us-east-1") -> str:
     Build a presigned HTTPS URL for a private "latest" server artifact.
 
     Chains through drivers-test-secrets-role to the role, bucket, and prefix
-    named in the drivers/devprod-release-infrastructure secret.
+    named in the SERVER_ARTIFACTS_SECRET_VAULT secret.
     """
     creds = _drivers_test_secrets_creds(region)
     secretsmanager = _boto3_client("secretsmanager", region, creds)
     config = json.loads(
-        secretsmanager.get_secret_value(SecretId=SERVER_ARTIFACTS_SECRET_VAULT)[
-            "SecretString"
-        ]
+        secretsmanager.get_secret_value(
+            SecretId=os.environ["SERVER_ARTIFACTS_SECRET_VAULT"]
+        )["SecretString"]
     )
     sts = _boto3_client("sts", region, creds)
     resp = sts.assume_role(
