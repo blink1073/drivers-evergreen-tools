@@ -203,16 +203,7 @@ def get_options():
             opts.orchestration_file = "auth-aws.json"
         if opts.topology == "standalone" or not opts.topology:
             opts.topology = "server"
-        if "GITHUB_ACTION" in os.environ and not opts.local_atlas:
-            # GitHub Actions consumers don't have S3 access to the private
-            # "latest" nightly builds, so default to (and alias "latest" to)
-            # the newest published release instead. This doesn't apply to
-            # local_atlas, which pulls a mongodb/mongodb-atlas-local Docker
-            # image tag rather than downloading via mongodl, and only has a
-            # "latest" tag, not "latest-stable".
-            if not opts.version or opts.version == "latest":
-                opts.version = "latest-stable"
-        elif not opts.version:
+        if not opts.version:
             opts.version = "latest"
 
     if opts.verbose:
@@ -489,6 +480,14 @@ def run(opts):
     dl_start = datetime.now()
 
     version = opts.version
+    # mongodl's "latest"/"latest-build" downloads come from a private S3
+    # bucket that GitHub Actions runners can't authenticate to, so alias to
+    # the newest published release there instead. This only affects what we
+    # ask mongodl for; opts.version itself (e.g. the mongodb-atlas-local
+    # Docker image tag) is untouched, since that has its own "latest" tag.
+    mongodl_version = version
+    if "GITHUB_ACTION" in os.environ and mongodl_version == "latest":
+        mongodl_version = "latest-stable"
     cache_dir = DRIVERS_TOOLS / ".local/cache"
     cache_dir_str = normalize_path(cache_dir)
     default_args = f"--out {mdb_binaries_str} --cache-dir {cache_dir_str} --retries 5"
@@ -510,12 +509,14 @@ def run(opts):
 
     if not opts.local_atlas:
         # Download the archive.
-        args = f"{default_args} --version {version}"
+        args = f"{default_args} --version {mongodl_version}"
         args += " --strip-path-components 2 --component archive"
         if not opts.existing_binaries_dir:
-            LOGGER.info(f"Downloading mongodb {version} to {mdb_binaries}...")
+            LOGGER.info(f"Downloading mongodb {mongodl_version} to {mdb_binaries}...")
             mongodl(shlex.split(args))
-            LOGGER.info(f"Downloading mongodb {version} to {mdb_binaries}... done.")
+            LOGGER.info(
+                f"Downloading mongodb {mongodl_version} to {mdb_binaries}... done."
+            )
         else:
             LOGGER.info(
                 f"Using existing mongod binaries dir: {opts.existing_binaries_dir}"
@@ -539,7 +540,7 @@ def run(opts):
         # path location than the other binaries, which is required for
         # https://github.com/mongodb/specifications/blob/master/source/client-side-encryption/tests/README.md#via-bypassautoencryption
         args = default_args + (
-            f" --version {version} --strip-path-components 1 --component crypt_shared"
+            f" --version {mongodl_version} --strip-path-components 1 --component crypt_shared"
         )
         LOGGER.info("Downloading crypt_shared...")
         mongodl(shlex.split(args))
