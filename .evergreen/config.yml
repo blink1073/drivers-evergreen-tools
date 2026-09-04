@@ -301,6 +301,7 @@ functions:
         binary: sh
         env:
           MONGODB_VERSION: ${VERSION}
+          SERVER_ARTIFACTS_SECRET_VAULT: ${server_artifacts_secret_vault}
         include_expansions_in_env:
           - AUTH
           - LOAD_BALANCER
