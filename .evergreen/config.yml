@@ -292,6 +292,9 @@ functions:
         file_location: "${DRIVERS_TOOLS}/results.json"
 
   "bootstrap mongo-orchestration":
+    - command: ec2.assume_role
+      params:
+        role_arn: ${drivers_test_secrets_role}
     - command: subprocess.exec
       params:
         # Purposely use sh here to ensure backwards compatibility.

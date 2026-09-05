@@ -30,6 +30,7 @@ import tarfile
 import textwrap
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import warnings
 import zipfile
@@ -609,7 +610,9 @@ class Cache:
         if modtime:
             headers["If-Modified-Since"] = modtime
         digest = hashlib.sha256(url.encode("utf-8")).hexdigest()[:4]
-        file_name = PurePosixPath(url).name
+        # Strip any query string (e.g. presigned S3 URL parameters) before
+        # deriving the cached filename.
+        file_name = PurePosixPath(urllib.parse.urlsplit(url).path).name
         dest = self._dirpath / "files" / digest / file_name
         if not dest.exists():
             headers = {}
@@ -801,6 +804,60 @@ def _published_build_url(
     return data[value], checksum
 
 
+def _boto3_client(service: str, region: str, creds: "dict|None"):
+    import boto3
+
+    kwargs = {"region_name": region}
+    if creds:
+        kwargs.update(
+            aws_access_key_id=creds["AccessKeyId"],
+            aws_secret_access_key=creds["SecretAccessKey"],
+            aws_session_token=creds["SessionToken"],
+        )
+    return boto3.client(service, **kwargs)
+
+
+def _server_artifacts_presigned_url(key: str, region: str = "us-east-1") -> str:
+    """
+    Build a presigned HTTPS URL for a private "latest" server artifact.
+
+    The vault is readable directly with whatever AWS identity is already
+    ambient: an assumed role's env vars in Evergreen (via `ec2.assume_role`,
+    which already *is* drivers-test-secrets-role), or an AWS_PROFILE SSO
+    session locally (a distinct identity from the role itself, which must
+    explicitly assume it -- using the ARN the vault itself provides -- before
+    it can reach the S3 artifacts role).
+    """
+    import boto3
+
+    default_vault = "drivers/devprod-release-infrastructure"
+    vault = os.environ.get("SERVER_ARTIFACTS_SECRET_VAULT", default_vault)
+
+    session = boto3.Session(profile_name=os.environ.get("AWS_PROFILE"))
+    secretsmanager = session.client("secretsmanager", region_name=region)
+    config = json.loads(secretsmanager.get_secret_value(SecretId=vault)["SecretString"])
+
+    if "AWS_ACCESS_KEY_ID" in os.environ:
+        secrets_role_creds = None
+    else:
+        sts = session.client("sts", region_name=region)
+        secrets_role_creds = sts.assume_role(
+            RoleArn=config["DRIVERS_TEST_SECRETS_ROLE_ARN"], RoleSessionName="mongodl"
+        )["Credentials"]
+
+    sts = _boto3_client("sts", region, secrets_role_creds)
+    resp = sts.assume_role(
+        RoleArn=config["SERVER_ARTIFACTS_ROLE_ARN"], RoleSessionName="mongodl"
+    )
+    s3 = _boto3_client("s3", region, resp["Credentials"])
+    full_key = f"{config['SERVER_ARTIFACTS_PREFIX']}/{key}"
+    return s3.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": config["SERVER_ARTIFACTS_BUCKET"], "Key": full_key},
+        ExpiresIn=3600,
+    )
+
+
 def _latest_build_url(
     cache: Cache,
     target: str,
@@ -812,16 +869,11 @@ def _latest_build_url(
     """
     Get the URL for an "unpublished" "latest" build.
 
-    These builds aren't published in a JSON manifest, so we have to form the URL
-    according to the user's parameters. We might fail to download a build if
-    there is no matching file.
+    These builds aren't published in a JSON manifest, so we have to form the
+    S3 key according to the user's parameters. We might fail to download a
+    build if there is no matching file.
     """
     # Normalize the filename components based on the download target
-    platform = {
-        "windows": "windows",
-        "win32": "win32",
-        "macos": "osx",
-    }.get(target, "linux")
     typ = {
         "windows": "windows",
         "win32": "win32",
@@ -831,7 +883,6 @@ def _latest_build_url(
         "archive": "mongodb",
         "crypt_shared": "mongo_crypt_shared_v1",
     }.get(component, component)
-    base = f"https://downloads.10gen.com/{platform}"
     # Windows has Zip files
     ext = "zip" if target == "windows" else "tgz"
     # Enterprise builds have an "enterprise" infix
@@ -847,12 +898,16 @@ def _latest_build_url(
             target = got.group(0)
     # Some platforms have a filename infix
     tgt_infix = (target + "-") if target not in ("windows", "win32", "macos") else ""
-    # Non-master branch uses a filename infix
-    br_infix = (branch + "-") if (branch is not None and branch != "master") else ""
-    filename = (
-        f"{component_name}-{typ}-{arch}-{ent_infix}{tgt_infix}{br_infix}latest.{ext}"
+    filename = f"{component_name}-{typ}-{arch}-{ent_infix}{tgt_infix}".rstrip("-")
+    filename = f"{filename}.{ext}"
+    # The branch is encoded by the S3 prefix, not the filename. We use the
+    # staging build for named branches, per DevProd's recommendation.
+    branch_folder = (
+        "mongodb-mongo-master-nightly"
+        if branch is None or branch == "master"
+        else f"mongodb-mongo-{branch}-staging"
     )
-    return f"{base}/{filename}"
+    return _server_artifacts_presigned_url(f"{branch_folder}/{filename}")
 
 
 def _dl_component(
