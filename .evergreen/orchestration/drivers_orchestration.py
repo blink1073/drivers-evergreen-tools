@@ -76,8 +76,7 @@ def get_options():
             default="latest",
             help='The version to download. Use "latest" to download '
             "the newest build (including release candidates). "
-            '--mongodb-runner and GitHub Actions alias "latest" to '
-            '"latest-stable".',
+            'GitHub Actions aliases "latest" to "latest-stable".',
         )
         parser.add_argument(
             "--topology",
@@ -483,15 +482,12 @@ def run(opts):
 
     version = opts.version
     # mongodl's "latest"/"latest-build" downloads come from a private S3
-    # bucket that GitHub Actions runners and mongodb-runner (run-mongodb.sh)
-    # users don't have credentials for, so alias to the newest published
-    # release there instead. This only affects what we ask mongodl for;
-    # opts.version itself (e.g. the mongodb-atlas-local Docker image tag) is
-    # untouched, since that has its own "latest" tag.
+    # bucket that GitHub Actions runners don't have credentials for, so alias
+    # to the newest published release there instead. This only affects what we
+    # ask mongodl for; opts.version itself (e.g. the mongodb-atlas-local
+    # Docker image tag) is untouched, since that has its own "latest" tag.
     mongodl_version = version
-    if (
-        "GITHUB_ACTION" in os.environ or opts.mongodb_runner
-    ) and mongodl_version == "latest":
+    if "GITHUB_ACTION" in os.environ and mongodl_version == "latest":
         mongodl_version = "latest-stable"
     cache_dir = DRIVERS_TOOLS / ".local/cache"
     cache_dir_str = normalize_path(cache_dir)
