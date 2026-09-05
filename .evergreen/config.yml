@@ -297,11 +297,25 @@ functions:
         role_arn: ${drivers_test_secrets_role}
     - command: subprocess.exec
       params:
+        # setup-secrets.sh requires bash, unlike run-orchestration.sh below.
+        binary: bash
+        env:
+          MONGODB_VERSION: ${VERSION}
+        include_expansions_in_env:
+          - AWS_ACCESS_KEY_ID
+          - AWS_SECRET_ACCESS_KEY
+          - AWS_SESSION_TOKEN
+        args:
+          - ${DRIVERS_TOOLS}/.evergreen/fetch-server-artifacts-secrets.sh
+    - command: expansions.update
+      params:
+        file: server-artifacts-expansion.yml
+    - command: subprocess.exec
+      params:
         # Purposely use sh here to ensure backwards compatibility.
         binary: sh
         env:
           MONGODB_VERSION: ${VERSION}
-          SERVER_ARTIFACTS_SECRET_VAULT: ${server_artifacts_secret_vault}
         include_expansions_in_env:
           - AUTH
           - LOAD_BALANCER
@@ -313,6 +327,8 @@ functions:
           - AWS_ACCESS_KEY_ID
           - AWS_SECRET_ACCESS_KEY
           - AWS_SESSION_TOKEN
+          - DRIVERS_TEST_SECRETS_ROLE_ARN
+          - SERVER_ARTIFACTS_SECRET_VAULT
         args:
           - ${DRIVERS_TOOLS}/.evergreen/run-orchestration.sh
           - -v
