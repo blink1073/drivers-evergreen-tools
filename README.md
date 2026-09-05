@@ -58,6 +58,10 @@ setup already documented in
 than `latest`/`latest-build` (e.g. `latest-stable`, or a pinned version like
 `8.0`) is unaffected and needs no AWS access.
 
+`run-mongodb.sh` (the `mongodb-runner` entry point for local dev and the
+GitHub Actions composite action) defaults to `latest-stable`. Requesting
+`MONGODB_VERSION=latest` explicitly still downloads the S3 nightly build.
+
 ## Using With GitHub Actions
 
 This repository includes a metadata file for GitHub Actions to allow downloading

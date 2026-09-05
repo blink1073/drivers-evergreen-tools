@@ -73,10 +73,9 @@ def get_options():
     if command == "run":
         parser.add_argument(
             "--version",
-            default="latest",
-            help='The version to download. Use "latest" to download '
-            "the newest build (including release candidates). "
-            'GitHub Actions aliases "latest" to "latest-stable".',
+            help='The version to download. "latest" downloads the newest '
+            "build (including release candidates). Defaults to "
+            '"latest" (or "latest-stable" under --mongodb-runner).',
         )
         parser.add_argument(
             "--topology",
@@ -206,6 +205,8 @@ def get_options():
             opts.topology = "server"
         if not opts.version:
             opts.version = "latest"
+            if opts.mongodb_runner and not opts.local_atlas:
+                opts.version = "latest-stable"
 
     if opts.verbose:
         LOGGER.setLevel(logging.DEBUG)
