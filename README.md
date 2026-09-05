@@ -45,12 +45,18 @@ https://evergreen.mongodb.com/waterfall/drivers-tools
 
 Requesting `MONGODB_VERSION=latest` or `latest-build` downloads an unpublished
 nightly build from a private S3 bucket, rather than the old public
-`downloads.mongodb.com`/`downloads.10gen.com` HTTP hosts. In Evergreen, this
-requires an `ec2.assume_role` step for `drivers_test_secrets_role` before the
-download step (already wired into [`bootstrap mongo-orchestration`](.evergreen/config.yml)).
-Locally, it requires an AWS profile that resolves to that same role. Any
-version other than `latest`/`latest-build` (e.g. `latest-stable`, or a pinned
-version like `8.0`) is unaffected and needs no AWS access.
+`downloads.mongodb.com`/`downloads.10gen.com` HTTP hosts. `mongodl.py` handles
+authentication itself, using whatever AWS identity is already active — no
+separate setup script or manually-exported secrets required. In Evergreen,
+this just needs an `ec2.assume_role` step for `drivers_test_secrets_role`
+before the download step (already wired into
+[`bootstrap mongo-orchestration`](.evergreen/config.yml)). Locally, it needs
+an `AWS_PROFILE` session that's able to read the
+`drivers/devprod-release-infrastructure` AWS Secrets Vault (this is the same
+setup already documented in
+[Secrets Handling](.evergreen/secrets_handling/README.md)). Any version other
+than `latest`/`latest-build` (e.g. `latest-stable`, or a pinned version like
+`8.0`) is unaffected and needs no AWS access.
 
 ## Using With GitHub Actions
 

@@ -804,26 +804,6 @@ def _published_build_url(
     return data[value], checksum
 
 
-def _drivers_test_secrets_creds(region: str) -> "dict|None":
-    """
-    Credentials for drivers-test-secrets-role.
-
-    In Evergreen, `ec2.assume_role` already exports these as ambient env vars, so
-    no extra hop is needed (returning None lets boto3's default chain pick them
-    up). Locally, assume the role from the AWS_PROFILE SSO session.
-    """
-    if "AWS_ACCESS_KEY_ID" in os.environ:
-        return None
-    import boto3
-
-    session = boto3.Session(profile_name=os.environ.get("AWS_PROFILE"))
-    sts = session.client("sts", region_name=region)
-    resp = sts.assume_role(
-        RoleArn=os.environ["DRIVERS_TEST_SECRETS_ROLE_ARN"], RoleSessionName="mongodl"
-    )
-    return resp["Credentials"]
-
-
 def _boto3_client(service: str, region: str, creds: "dict|None"):
     import boto3
 
@@ -841,17 +821,31 @@ def _server_artifacts_presigned_url(key: str, region: str = "us-east-1") -> str:
     """
     Build a presigned HTTPS URL for a private "latest" server artifact.
 
-    Chains through drivers-test-secrets-role to the role, bucket, and prefix
-    named in the SERVER_ARTIFACTS_SECRET_VAULT secret.
+    The vault is readable directly with whatever AWS identity is already
+    ambient: an assumed role's env vars in Evergreen (via `ec2.assume_role`,
+    which already *is* drivers-test-secrets-role), or an AWS_PROFILE SSO
+    session locally (a distinct identity from the role itself, which must
+    explicitly assume it -- using the ARN the vault itself provides -- before
+    it can reach the S3 artifacts role).
     """
-    creds = _drivers_test_secrets_creds(region)
-    secretsmanager = _boto3_client("secretsmanager", region, creds)
-    config = json.loads(
-        secretsmanager.get_secret_value(
-            SecretId=os.environ["SERVER_ARTIFACTS_SECRET_VAULT"]
-        )["SecretString"]
-    )
-    sts = _boto3_client("sts", region, creds)
+    import boto3
+
+    default_vault = "drivers/devprod-release-infrastructure"
+    vault = os.environ.get("SERVER_ARTIFACTS_SECRET_VAULT", default_vault)
+
+    session = boto3.Session(profile_name=os.environ.get("AWS_PROFILE"))
+    secretsmanager = session.client("secretsmanager", region_name=region)
+    config = json.loads(secretsmanager.get_secret_value(SecretId=vault)["SecretString"])
+
+    if "AWS_ACCESS_KEY_ID" in os.environ:
+        secrets_role_creds = None
+    else:
+        sts = session.client("sts", region_name=region)
+        secrets_role_creds = sts.assume_role(
+            RoleArn=config["DRIVERS_TEST_SECRETS_ROLE_ARN"], RoleSessionName="mongodl"
+        )["Credentials"]
+
+    sts = _boto3_client("sts", region, secrets_role_creds)
     resp = sts.assume_role(
         RoleArn=config["SERVER_ARTIFACTS_ROLE_ARN"], RoleSessionName="mongodl"
     )
