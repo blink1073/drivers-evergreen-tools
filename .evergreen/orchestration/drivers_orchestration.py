@@ -510,7 +510,7 @@ def run(opts):
             f"using the latest v{version} nightly build instead."
         )
         default_args += f" --latest-build-branch v{version}"
-        version = "latest-build"
+        version = mongodl_version = "latest-build"
 
     if not opts.local_atlas:
         # Download the archive.
