@@ -75,7 +75,9 @@ def get_options():
             "--version",
             default="latest",
             help='The version to download. Use "latest" to download '
-            "the newest available version (including release candidates).",
+            "the newest build (including release candidates). "
+            '--mongodb-runner and GitHub Actions alias "latest" to '
+            '"latest-stable".',
         )
         parser.add_argument(
             "--topology",
