@@ -58,6 +58,10 @@ setup already documented in
 than `latest`/`latest-build` (e.g. `latest-stable`, or a pinned version like
 `8.0`) is unaffected and needs no AWS access.
 
+`run-mongodb.sh` (the `mongodb-runner` entry point used for local dev and by
+the GitHub Actions composite action) defaults to `latest-stable` rather than
+`latest`, since it's meant to work without AWS credentials.
+
 ## Using With GitHub Actions
 
 This repository includes a metadata file for GitHub Actions to allow downloading
