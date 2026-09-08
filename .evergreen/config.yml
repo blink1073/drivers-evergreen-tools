@@ -292,9 +292,6 @@ functions:
         file_location: "${DRIVERS_TOOLS}/results.json"
 
   "bootstrap mongo-orchestration":
-    - command: ec2.assume_role
-      params:
-        role_arn: ${drivers_test_secrets_role}
     - command: subprocess.exec
       params:
         # Purposely use sh here to ensure backwards compatibility.
@@ -942,6 +939,7 @@ tasks:
     - name: "test-latest-local-atlas"
       tags: ["latest", "local-atlas"]
       commands:
+        - func: "assume role"
         - func: "bootstrap mongo-orchestration"
           vars:
             VERSION: "latest"
@@ -951,6 +949,7 @@ tasks:
     - name: "test-latest-standalone"
       tags: ["latest", "standalone"]
       commands:
+        - func: "assume role"
         - func: "bootstrap mongo-orchestration"
           vars:
             VERSION: "latest"
@@ -960,6 +959,7 @@ tasks:
     - name: "test-latest-replica_set"
       tags: ["latest", "replica_set"]
       commands:
+        - func: "assume role"
         - func: "bootstrap mongo-orchestration"
           vars:
             VERSION: "latest"
@@ -969,6 +969,7 @@ tasks:
     - name: "test-latest-sharded_cluster"
       tags: ["latest", "sharded_cluster"]
       commands:
+        - func: "assume role"
         - func: "bootstrap mongo-orchestration"
           vars:
             VERSION: "latest"
@@ -978,6 +979,7 @@ tasks:
     - name: "test-latest-load_balancer"
       tags: ["latest", "load_balancer"]
       commands:
+        - func: "assume role"
         - func: "bootstrap mongo-orchestration"
           vars:
             VERSION: "latest"

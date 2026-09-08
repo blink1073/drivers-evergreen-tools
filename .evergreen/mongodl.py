@@ -597,9 +597,12 @@ class Cache:
         """
         Obtain a local copy of the file at the given URL.
         """
+        # Presigned URLs carry a fresh signature on every call, so key the
+        # cache by the query-less URL to reuse the download across runs.
+        cache_url = urllib.parse.urlsplit(url)._replace(query="").geturl()
         info = self._db(
             "SELECT etag, last_modified " "FROM mdl_http_downloads WHERE url=:url",
-            url=url,
+            url=cache_url,
         )
         etag = None  # type: str|None
         modtime = None  # type: str|None
@@ -609,10 +612,10 @@ class Cache:
             headers["If-None-Match"] = etag
         if modtime:
             headers["If-Modified-Since"] = modtime
-        digest = hashlib.sha256(url.encode("utf-8")).hexdigest()[:4]
+        digest = hashlib.sha256(cache_url.encode("utf-8")).hexdigest()[:4]
         # Strip any query string (e.g. presigned S3 URL parameters) before
         # deriving the cached filename.
-        file_name = PurePosixPath(urllib.parse.urlsplit(url).path).name
+        file_name = PurePosixPath(urllib.parse.urlsplit(cache_url).path).name
         dest = self._dirpath / "files" / digest / file_name
         if not dest.exists():
             headers = {}
@@ -644,7 +647,7 @@ class Cache:
         self._db(
             "INSERT OR REPLACE INTO mdl_http_downloads (url, etag, last_modified) "
             "VALUES (:url, :etag, :mtime)",
-            url=url,
+            url=cache_url,
             etag=got_etag,
             mtime=got_modtime,
         )
@@ -900,10 +903,11 @@ def _dl_component(
                 cache, version, target, arch, edition, component
             )
 
-    # This must go to stdout to be consumed by the calling program.
-    print(dl_url)
-
-    LOGGER.info("Download url: %s", dl_url)
+    # The presigned URL embeds short-lived credentials, so keep log output
+    # redacted. --no-download prints the full URL for the calling program.
+    redacted_url = urllib.parse.urlsplit(dl_url)._replace(query="").geturl()
+    LOGGER.info("Download url: %s", redacted_url)
+    print(dl_url if no_download else redacted_url)
 
     if no_download:
         return None

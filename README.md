@@ -56,13 +56,15 @@ an `AWS_PROFILE` session that's able to read the
 setup already documented in
 [Secrets Handling](.evergreen/secrets_handling/README.md)). Any version other
 than `latest`/`latest-build` (e.g. `latest-stable`, or a pinned version like
-`8.0`) is unaffected and needs no AWS access.
+`8.0`) is unaffected and needs no AWS access. An unpublished version such as
+`9.0` is treated as its `latest-build` nightly and does need AWS access.
 
 `run-mongodb.sh` (the `mongodb-runner` entry point for local dev and the
 GitHub Actions composite action) defaults to `latest-stable`. The GitHub
 Action also maps `latest` to `latest-stable` since runners typically lack AWS
 credentials; elsewhere an explicit `MONGODB_VERSION=latest` downloads the
-nightly build.
+nightly build. Under `--local-atlas` the version is the `mongodb-atlas-local`
+Docker image tag and is not remapped.
 
 ## Using With GitHub Actions
 
@@ -84,7 +86,7 @@ The following inputs exist:
 
 | Name | Description |
 | --- | --- |
-| `version` | MongoDB version to install. Defaults to `latest-stable`; `latest` is also mapped to `latest-stable`. `latest-build` downloads the newest nightly build, which needs AWS credentials that GitHub Actions runners typically lack (see [Downloading "latest" MongoDB Binaries](#downloading-latest-mongodb-binaries) for that path). |
+| `version` | MongoDB version to install. Defaults to `latest-stable`; `latest` is also mapped to `latest-stable`, except under `local-atlas` where it is the Docker image tag. `latest-build` downloads the newest nightly build, which needs AWS credentials that GitHub Actions runners typically lack (see [Downloading "latest" MongoDB Binaries](#downloading-latest-mongodb-binaries) for that path). |
 | `topology` | Topology of the deployment (server, replica_set, sharded_cluster) |
 | `auth` | Whether to enable auth |
 | `ssl` | Whether to enable SSL |

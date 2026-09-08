@@ -502,12 +502,19 @@ def run(opts):
         default_args += f" --arch={opts.arch}"
 
     if version in UNPUBLISHED_VERSIONS:
-        LOGGER.warning(
-            f"MongoDB {version} is not published in full.json; "
-            f"using the latest v{version} nightly build instead."
-        )
-        default_args += f" --latest-build-branch v{version}"
-        version = mongodl_version = "latest-build"
+        if "GITHUB_ACTION" in os.environ:
+            LOGGER.warning(
+                f"MongoDB {version} is not published; GitHub Actions runners "
+                "cannot fetch the nightly build, so using latest-stable instead."
+            )
+            version = mongodl_version = "latest-stable"
+        else:
+            LOGGER.warning(
+                f"MongoDB {version} is not published in full.json; "
+                f"using the latest v{version} nightly build instead."
+            )
+            default_args += f" --latest-build-branch v{version}"
+            version = mongodl_version = "latest-build"
 
     if not opts.local_atlas:
         # Download the archive.
