@@ -527,12 +527,18 @@ def run(opts):
 
     # Download crypt shared.
     if not opts.skip_crypt_shared:
+        # Under local-atlas the Docker image tag is "latest", but crypt_shared
+        # must come from a published build, since GitHub Actions runners have
+        # no access to the private "latest" S3 bucket.
+        crypt_shared_version = version
+        if opts.local_atlas and version == "latest":
+            crypt_shared_version = "latest-stable"
         # Get the download URL for crypt_shared.
         # We download crypt_shared to DRIVERS_TOOLS so that it is on a different
         # path location than the other binaries, which is required for
         # https://github.com/mongodb/specifications/blob/master/source/client-side-encryption/tests/README.md#via-bypassautoencryption
         args = default_args + (
-            f" --version {version} --strip-path-components 1 --component crypt_shared"
+            f" --version {crypt_shared_version} --strip-path-components 1 --component crypt_shared"
         )
         LOGGER.info("Downloading crypt_shared...")
         mongodl(shlex.split(args))
