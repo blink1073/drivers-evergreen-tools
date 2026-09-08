@@ -5,7 +5,7 @@ inputs:
     description: >-
       MongoDB version to install. Defaults to "latest-stable". "latest"
       downloads the newest nightly build, which needs AWS credentials that
-      GitHub Actions runners don't have.
+      GitHub Actions runners don't have by default.
     required: false
   topology:
     description: "Topology of the deployment"

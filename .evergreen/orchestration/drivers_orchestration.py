@@ -73,9 +73,9 @@ def get_options():
     if command == "run":
         parser.add_argument(
             "--version",
-            help='The version to download. "latest" downloads the newest '
-            "build (including release candidates). Defaults to "
-            '"latest" (or "latest-stable" under --mongodb-runner).',
+            help='The version to download. Docker images default to "latest"; '
+            'server binaries default to "latest-stable". "latest" downloads '
+            "the newest build (including release candidates).",
         )
         parser.add_argument(
             "--topology",
