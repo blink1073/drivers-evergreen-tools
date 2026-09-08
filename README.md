@@ -82,7 +82,7 @@ The following inputs exist:
 
 | Name | Description |
 | --- | --- |
-| `version` | MongoDB version to install. Defaults to `latest-stable`; `latest` is also aliased to `latest-stable`, since GitHub Actions runners don't have access to the private S3 bucket backing the true "latest" nightly builds (see [Downloading "latest" MongoDB Binaries](#downloading-latest-mongodb-binaries) for that path). |
+| `version` | MongoDB version to install. Defaults to `latest-stable`. `latest` downloads the newest nightly build, which needs AWS credentials that GitHub Actions runners don't have (see [Downloading "latest" MongoDB Binaries](#downloading-latest-mongodb-binaries) for that path). |
 | `topology` | Topology of the deployment (server, replica_set, sharded_cluster) |
 | `auth` | Whether to enable auth |
 | `ssl` | Whether to enable SSL |

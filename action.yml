@@ -3,9 +3,9 @@ description: "Downloads MongoDB and runs a cluster using mongo-orchestration"
 inputs:
   version:
     description: >-
-      MongoDB version to install. Defaults to "latest-stable"; "latest" is
-      also aliased to "latest-stable", since GitHub Actions runners don't
-      have access to the private "latest" nightly builds.
+      MongoDB version to install. Defaults to "latest-stable". "latest"
+      downloads the newest nightly build, which needs AWS credentials that
+      GitHub Actions runners don't have.
     required: false
   topology:
     description: "Topology of the deployment"
