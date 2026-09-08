@@ -900,8 +900,8 @@ def _latest_build_url(
     tgt_infix = (target + "-") if target not in ("windows", "win32", "macos") else ""
     filename = f"{component_name}-{typ}-{arch}-{ent_infix}{tgt_infix}".rstrip("-")
     filename = f"{filename}.{ext}"
-    # The branch is encoded by the S3 prefix, not the filename. We use the
-    # staging build for named branches, per DevProd's recommendation.
+    # The branch is encoded by the S3 prefix, not the filename. Master uses
+    # its nightly prefix; named branches use their staging prefix.
     branch_folder = (
         "mongodb-mongo-master-nightly"
         if branch is None or branch == "master"
