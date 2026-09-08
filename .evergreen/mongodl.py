@@ -804,7 +804,13 @@ def _published_build_url(
     return data[value], checksum
 
 
-def _boto3_client(service: str, region: str, creds: "dict|None"):
+_SERVER_ARTIFACTS_BUCKET = "origin-mongodb-server-latest"
+_SERVER_ARTIFACTS_PREFIX = "server-latest"
+_SERVER_ARTIFACTS_REGION = "us-east-1"
+_DEFAULT_SECRET_VAULT = "drivers/devprod-release-infrastructure"
+
+
+def _boto3_client(service: str, region: str, creds: "dict|None" = None):
     import boto3
 
     kwargs = {"region_name": region}
@@ -817,43 +823,77 @@ def _boto3_client(service: str, region: str, creds: "dict|None"):
     return boto3.client(service, **kwargs)
 
 
-def _server_artifacts_presigned_url(key: str, region: str = "us-east-1") -> str:
-    """
-    Build a presigned HTTPS URL for a private "latest" server artifact.
+def _has_s3_access(s3, key: str) -> bool:
+    from botocore.exceptions import ClientError, NoCredentialsError
 
-    The vault is readable directly with whatever AWS identity is already
-    ambient: an assumed role's env vars in Evergreen (via `ec2.assume_role`,
-    which already *is* drivers-test-secrets-role), or an AWS_PROFILE SSO
-    session locally (a distinct identity from the role itself, which must
-    explicitly assume it -- using the ARN the vault itself provides -- before
-    it can reach the S3 artifacts role).
-    """
-    import boto3
+    full_key = f"{_SERVER_ARTIFACTS_PREFIX}/{key}"
+    try:
+        s3.head_object(Bucket=_SERVER_ARTIFACTS_BUCKET, Key=full_key)
+        return True
+    except ClientError as err:
+        # A 404 means the credentials were accepted but the object is absent;
+        # the download surfaces that as "no matching file" on its own.
+        if err.response["ResponseMetadata"]["HTTPStatusCode"] == 404:
+            return True
+        if err.response["ResponseMetadata"]["HTTPStatusCode"] == 403:
+            return False
+        raise
+    except NoCredentialsError:
+        return False
 
-    default_vault = "drivers/devprod-release-infrastructure"
-    vault = os.environ.get("SERVER_ARTIFACTS_SECRET_VAULT", default_vault)
 
-    session = boto3.Session(profile_name=os.environ.get("AWS_PROFILE"))
-    secretsmanager = session.client("secretsmanager", region_name=region)
+def _server_artifacts_s3_client(key: str):
+    from botocore.exceptions import ClientError, NoCredentialsError
+
+    # Stage 1: use whatever identity is already ambient.
+    s3 = _boto3_client("s3", _SERVER_ARTIFACTS_REGION)
+    if _has_s3_access(s3, key):
+        return s3
+
+    vault = os.environ.get("SERVER_ARTIFACTS_SECRET_VAULT", _DEFAULT_SECRET_VAULT)
+    secretsmanager = _boto3_client("secretsmanager", _SERVER_ARTIFACTS_REGION)
     config = json.loads(secretsmanager.get_secret_value(SecretId=vault)["SecretString"])
 
-    if "AWS_ACCESS_KEY_ID" in os.environ:
-        secrets_role_creds = None
-    else:
-        sts = session.client("sts", region_name=region)
-        secrets_role_creds = sts.assume_role(
-            RoleArn=config["DRIVERS_TEST_SECRETS_ROLE_ARN"], RoleSessionName="mongodl"
-        )["Credentials"]
+    sts = _boto3_client("sts", _SERVER_ARTIFACTS_REGION)
 
-    sts = _boto3_client("sts", region, secrets_role_creds)
-    resp = sts.assume_role(
+    # Stage 2: assume the artifacts role directly from the ambient identity.
+    try:
+        artifacts_creds = sts.assume_role(
+            RoleArn=config["SERVER_ARTIFACTS_ROLE_ARN"], RoleSessionName="mongodl"
+        )["Credentials"]
+    except (ClientError, NoCredentialsError):
+        artifacts_creds = None
+    if artifacts_creds is not None:
+        s3 = _boto3_client("s3", _SERVER_ARTIFACTS_REGION, artifacts_creds)
+        if _has_s3_access(s3, key):
+            return s3
+
+    # Stage 3: assume the secrets role first, then the artifacts role.
+    secrets_creds = sts.assume_role(
+        RoleArn=config["DRIVERS_TEST_SECRETS_ROLE_ARN"], RoleSessionName="mongodl"
+    )["Credentials"]
+    artifacts_creds = _boto3_client(
+        "sts", _SERVER_ARTIFACTS_REGION, secrets_creds
+    ).assume_role(
         RoleArn=config["SERVER_ARTIFACTS_ROLE_ARN"], RoleSessionName="mongodl"
-    )
-    s3 = _boto3_client("s3", region, resp["Credentials"])
-    full_key = f"{config['SERVER_ARTIFACTS_PREFIX']}/{key}"
+    )["Credentials"]
+
+    return _boto3_client("s3", _SERVER_ARTIFACTS_REGION, artifacts_creds)
+
+
+def _server_artifacts_presigned_url(key: str) -> str:
+    """
+    Build a presigned HTTPS URL for a private server artifact.
+
+    Credentials are tried in order: the ambient identity, the artifacts role
+    assumed directly, then the artifacts role reached through the
+    drivers-test-secrets role.
+    """
+    s3 = _server_artifacts_s3_client(key)
+    full_key = f"{_SERVER_ARTIFACTS_PREFIX}/{key}"
     return s3.generate_presigned_url(
         "get_object",
-        Params={"Bucket": config["SERVER_ARTIFACTS_BUCKET"], "Key": full_key},
+        Params={"Bucket": _SERVER_ARTIFACTS_BUCKET, "Key": full_key},
         ExpiresIn=3600,
     )
 
