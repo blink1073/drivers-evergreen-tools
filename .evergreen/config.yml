@@ -346,9 +346,6 @@ functions:
           - ${PROJECT_DIRECTORY}/.evergreen/run-tests.sh
 
   "run docker test":
-    - command: ec2.assume_role
-      params:
-        role_arn: ${drivers_test_secrets_role}
     - command: subprocess.exec
       type: test
       params:
