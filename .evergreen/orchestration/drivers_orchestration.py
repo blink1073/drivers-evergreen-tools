@@ -73,9 +73,10 @@ def get_options():
     if command == "run":
         parser.add_argument(
             "--version",
-            help='The version to download. Docker images default to "latest"; '
-            'server binaries default to "latest-stable". "latest" downloads '
-            "the newest build (including release candidates).",
+            help='The version to download. "latest" downloads the newest nightly '
+            'build and "latest-stable" the newest stable release; the GitHub '
+            'Action maps "latest" to "latest-stable". Under --local-atlas this '
+            "is the Docker image tag.",
         )
         parser.add_argument(
             "--topology",
@@ -482,6 +483,13 @@ def run(opts):
     dl_start = datetime.now()
 
     version = opts.version
+    # GitHub Actions runners have no AWS credentials for the private "latest"
+    # nightly, so map it to the newest stable release there. This only affects
+    # what mongodl is asked for; opts.version is untouched (it is the Docker
+    # image tag under --local-atlas).
+    mongodl_version = version
+    if "GITHUB_ACTION" in os.environ and mongodl_version == "latest":
+        mongodl_version = "latest-stable"
     cache_dir = DRIVERS_TOOLS / ".local/cache"
     cache_dir_str = normalize_path(cache_dir)
     default_args = f"--out {mdb_binaries_str} --cache-dir {cache_dir_str} --retries 5"
@@ -499,16 +507,18 @@ def run(opts):
             f"using the latest v{version} nightly build instead."
         )
         default_args += f" --latest-build-branch v{version}"
-        version = "latest-build"
+        version = mongodl_version = "latest-build"
 
     if not opts.local_atlas:
         # Download the archive.
-        args = f"{default_args} --version {version}"
+        args = f"{default_args} --version {mongodl_version}"
         args += " --strip-path-components 2 --component archive"
         if not opts.existing_binaries_dir:
-            LOGGER.info(f"Downloading mongodb {version} to {mdb_binaries}...")
+            LOGGER.info(f"Downloading mongodb {mongodl_version} to {mdb_binaries}...")
             mongodl(shlex.split(args))
-            LOGGER.info(f"Downloading mongodb {version} to {mdb_binaries}... done.")
+            LOGGER.info(
+                f"Downloading mongodb {mongodl_version} to {mdb_binaries}... done."
+            )
         else:
             LOGGER.info(
                 f"Using existing mongod binaries dir: {opts.existing_binaries_dir}"
@@ -527,18 +537,12 @@ def run(opts):
 
     # Download crypt shared.
     if not opts.skip_crypt_shared:
-        # Under local-atlas the Docker image tag is "latest", but crypt_shared
-        # must come from a published build, since GitHub Actions runners have
-        # no access to the private "latest" S3 bucket.
-        crypt_shared_version = version
-        if opts.local_atlas and version == "latest":
-            crypt_shared_version = "latest-stable"
         # Get the download URL for crypt_shared.
         # We download crypt_shared to DRIVERS_TOOLS so that it is on a different
         # path location than the other binaries, which is required for
         # https://github.com/mongodb/specifications/blob/master/source/client-side-encryption/tests/README.md#via-bypassautoencryption
         args = default_args + (
-            f" --version {crypt_shared_version} --strip-path-components 1 --component crypt_shared"
+            f" --version {mongodl_version} --strip-path-components 1 --component crypt_shared"
         )
         LOGGER.info("Downloading crypt_shared...")
         mongodl(shlex.split(args))

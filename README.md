@@ -59,8 +59,10 @@ than `latest`/`latest-build` (e.g. `latest-stable`, or a pinned version like
 `8.0`) is unaffected and needs no AWS access.
 
 `run-mongodb.sh` (the `mongodb-runner` entry point for local dev and the
-GitHub Actions composite action) defaults to `latest-stable`. Requesting
-`MONGODB_VERSION=latest` explicitly still downloads the S3 nightly build.
+GitHub Actions composite action) defaults to `latest-stable`. The GitHub
+Action also maps `latest` to `latest-stable` since runners have no AWS
+credentials; elsewhere an explicit `MONGODB_VERSION=latest` downloads the
+nightly build.
 
 ## Using With GitHub Actions
 
@@ -82,7 +84,7 @@ The following inputs exist:
 
 | Name | Description |
 | --- | --- |
-| `version` | MongoDB version to install. Defaults to `latest-stable`. `latest` downloads the newest nightly build, which needs AWS credentials that GitHub Actions runners don't have (see [Downloading "latest" MongoDB Binaries](#downloading-latest-mongodb-binaries) for that path). |
+| `version` | MongoDB version to install. Defaults to `latest-stable`; `latest` is also mapped to `latest-stable`. `latest-build` downloads the newest nightly build, which needs AWS credentials that GitHub Actions runners don't have (see [Downloading "latest" MongoDB Binaries](#downloading-latest-mongodb-binaries) for that path). |
 | `topology` | Topology of the deployment (server, replica_set, sharded_cluster) |
 | `auth` | Whether to enable auth |
 | `ssl` | Whether to enable SSL |
