@@ -483,10 +483,10 @@ def run(opts):
     dl_start = datetime.now()
 
     version = opts.version
-    # GitHub Actions runners have no AWS credentials for the private "latest"
-    # nightly, so map it to the newest stable release there. This only affects
-    # what mongodl is asked for; opts.version is untouched (it is the Docker
-    # image tag under --local-atlas).
+    # GitHub Actions runners typically lack AWS credentials for the private
+    # "latest" nightly, so map it to the newest stable release there. This only
+    # affects what mongodl is asked for; opts.version is untouched (it is the
+    # Docker image tag under --local-atlas).
     mongodl_version = version
     if "GITHUB_ACTION" in os.environ and mongodl_version == "latest":
         mongodl_version = "latest-stable"
