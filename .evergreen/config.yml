@@ -349,6 +349,9 @@ functions:
           - ${PROJECT_DIRECTORY}/.evergreen/run-tests.sh
 
   "run docker test":
+    - command: ec2.assume_role
+      params:
+        role_arn: ${drivers_test_secrets_role}
     - command: subprocess.exec
       type: test
       params:
@@ -572,31 +575,47 @@ functions:
         args: [src/.evergreen/tests/test-drivers-tools-archive.sh]
 
   "run mongodb runner test partial":
+    - command: ec2.assume_role
+      params:
+        role_arn: ${drivers_test_secrets_role}
     - command: subprocess.exec
       type: test
       params:
         binary: bash
+        include_expansions_in_env: [AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN]
         args: [src/.evergreen/tests/test-mongodb-runner.sh, partial]
 
   "run mongodb runner test full":
+    - command: ec2.assume_role
+      params:
+        role_arn: ${drivers_test_secrets_role}
     - command: subprocess.exec
       type: test
       params:
         binary: bash
+        include_expansions_in_env: [AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN]
         args: [src/.evergreen/tests/test-mongodb-runner.sh]
 
   "run cli test partial":
+    - command: ec2.assume_role
+      params:
+        role_arn: ${drivers_test_secrets_role}
     - command: subprocess.exec
       type: test
       params:
         binary: bash
+        include_expansions_in_env: [AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN]
         args: [src/.evergreen/tests/test-cli.sh, partial]
 
   "run cli test full":
+    - command: ec2.assume_role
+      params:
+        role_arn: ${drivers_test_secrets_role}
     - command: subprocess.exec
       type: test
       params:
         binary: bash
+        include_expansions_in_env: [AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN]
         args: [src/.evergreen/tests/test-cli.sh]
 
   "run ocsp test":
