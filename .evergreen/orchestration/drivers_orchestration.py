@@ -204,10 +204,10 @@ def get_options():
             opts.orchestration_file = "auth-aws.json"
         if opts.topology == "standalone" or not opts.topology:
             opts.topology = "server"
+        # Under --local-atlas the version is a Docker tag, which only publishes
+        # "latest"; otherwise default to the newest stable release.
         if not opts.version:
-            opts.version = "latest"
-            if opts.mongodb_runner and not opts.local_atlas:
-                opts.version = "latest-stable"
+            opts.version = "latest" if opts.local_atlas else "latest-stable"
 
     if opts.verbose:
         LOGGER.setLevel(logging.DEBUG)
@@ -483,12 +483,14 @@ def run(opts):
     dl_start = datetime.now()
 
     version = opts.version
-    # GitHub Actions runners typically lack AWS credentials for the private
-    # "latest" nightly, so map it to the newest stable release there. This only
-    # affects what mongodl is asked for; opts.version is untouched (it is the
-    # Docker image tag under --local-atlas).
+    # GitHub Actions runners and local-atlas users have no AWS credentials for
+    # the private "latest" nightly, so map it to the newest stable release for
+    # the mongodl download. opts.version is untouched (it is the Docker image
+    # tag under --local-atlas).
     mongodl_version = version
-    if "GITHUB_ACTION" in os.environ and mongodl_version == "latest":
+    if (
+        "GITHUB_ACTION" in os.environ or opts.local_atlas
+    ) and mongodl_version == "latest":
         mongodl_version = "latest-stable"
     cache_dir = DRIVERS_TOOLS / ".local/cache"
     cache_dir_str = normalize_path(cache_dir)

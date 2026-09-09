@@ -7,6 +7,11 @@ _SERVER_ARTIFACTS_BUCKET = "origin-mongodb-server-latest"
 _SERVER_ARTIFACTS_PREFIX = "server-latest"
 _SERVER_ARTIFACTS_REGION = "us-east-1"
 _DEFAULT_SECRET_VAULT = "drivers/devprod-release-infrastructure"
+# Can read the artifacts vault; used as a fallback when the ambient identity
+# can only assume it, not read the vault directly.
+_DRIVERS_TEST_SECRETS_ROLE_ARN = (
+    "arn:aws:iam::857654397073:role/drivers-test-secrets-role"
+)
 
 
 def _boto3_client(service: str, region: str, creds: "dict|None" = None):
@@ -41,6 +46,11 @@ def _has_s3_access(s3, key: str) -> bool:
         return False
 
 
+def _read_artifacts_config(vault: str, creds: "dict|None" = None) -> dict:
+    secretsmanager = _boto3_client("secretsmanager", _SERVER_ARTIFACTS_REGION, creds)
+    return json.loads(secretsmanager.get_secret_value(SecretId=vault)["SecretString"])
+
+
 def _resolve_s3_client(key: str):
     from botocore.exceptions import ClientError, NoCredentialsError
 
@@ -50,10 +60,18 @@ def _resolve_s3_client(key: str):
         return s3
 
     vault = os.environ.get("SERVER_ARTIFACTS_SECRET_VAULT", _DEFAULT_SECRET_VAULT)
-    secretsmanager = _boto3_client("secretsmanager", _SERVER_ARTIFACTS_REGION)
-    config = json.loads(secretsmanager.get_secret_value(SecretId=vault)["SecretString"])
-
     sts = _boto3_client("sts", _SERVER_ARTIFACTS_REGION)
+
+    # Read the vault with the ambient identity; if that identity can assume the
+    # secrets role but not read the vault directly, assume it and retry.
+    secrets_creds = None
+    try:
+        config = _read_artifacts_config(vault)
+    except (ClientError, NoCredentialsError):
+        secrets_creds = sts.assume_role(
+            RoleArn=_DRIVERS_TEST_SECRETS_ROLE_ARN, RoleSessionName="mongodl"
+        )["Credentials"]
+        config = _read_artifacts_config(vault, secrets_creds)
 
     # Stage 2: assume the artifacts role directly from the ambient identity.
     try:
@@ -68,9 +86,10 @@ def _resolve_s3_client(key: str):
             return s3
 
     # Stage 3: assume the secrets role first, then the artifacts role.
-    secrets_creds = sts.assume_role(
-        RoleArn=config["DRIVERS_TEST_SECRETS_ROLE_ARN"], RoleSessionName="mongodl"
-    )["Credentials"]
+    if secrets_creds is None:
+        secrets_creds = sts.assume_role(
+            RoleArn=config["DRIVERS_TEST_SECRETS_ROLE_ARN"], RoleSessionName="mongodl"
+        )["Credentials"]
     artifacts_creds = _boto3_client(
         "sts", _SERVER_ARTIFACTS_REGION, secrets_creds
     ).assume_role(

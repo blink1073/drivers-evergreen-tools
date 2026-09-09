@@ -36,7 +36,4 @@ SCRIPT_DIR=$(dirname ${BASH_SOURCE:-$0})
 # Ensure the CLIs are up to date.
 bash $SCRIPT_DIR/orchestration/setup.sh
 
-MONGODB_VERSION="${MONGODB_VERSION:-latest-stable}"
-export MONGODB_VERSION
-
 $SCRIPT_DIR/orchestration/drivers-orchestration run "$@"
