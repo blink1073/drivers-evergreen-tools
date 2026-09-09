@@ -51,10 +51,10 @@ separate setup script or manually-exported secrets are required. In Evergreen,
 this just needs an `ec2.assume_role` step for `drivers_test_secrets_role`
 before the download step (wired into the global
 [`pre` block](.evergreen/config.yml), which assumes the role for every task).
-Locally, it needs
-an `AWS_PROFILE` session that's able to read the
-`drivers/devprod-release-infrastructure` AWS Secrets Vault (this is the same
-setup already documented in
+Locally, it needs a working AWS identity: one with direct access to the
+`origin-mongodb-server-latest` bucket, or a profile that can reach the
+`drivers/devprod-release-infrastructure` AWS Secrets Vault and assume the roles
+it names (the same setup documented in
 [Secrets Handling](.evergreen/secrets_handling/README.md)). Any version other
 than `latest`/`latest-build` (e.g. `latest-stable`, or a pinned version like
 `8.0`) is unaffected and needs no AWS access. An unpublished version such as

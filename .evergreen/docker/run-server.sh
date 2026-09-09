@@ -67,11 +67,12 @@ ARGS+=" -e DISABLE_TEST_COMMANDS=$DISABLE_TEST_COMMANDS"
 ARGS+=" -e MONGODB_DOWNLOAD_URL=$MONGODB_DOWNLOAD_URL"
 
 # Forward the host's AWS identity so an explicit latest/latest-build can
-# reach the private S3 bucket from inside the container.
-ARGS+=" -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}"
-ARGS+=" -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}"
-ARGS+=" -e AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}"
-ARGS+=" -e AWS_PROFILE=${AWS_PROFILE:-}"
+# reach the private S3 bucket from inside the container. Pass by name so the
+# secret values stay out of the container start command.
+ARGS+=" -e AWS_ACCESS_KEY_ID"
+ARGS+=" -e AWS_SECRET_ACCESS_KEY"
+ARGS+=" -e AWS_SESSION_TOKEN"
+ARGS+=" -e AWS_PROFILE"
 if [ -n "${AWS_PROFILE:-}" ]; then
   ARGS+=" -v ${HOME}/.aws:/root/.aws:ro"
 fi
