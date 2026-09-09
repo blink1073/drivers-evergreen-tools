@@ -346,13 +346,16 @@ functions:
           - ${PROJECT_DIRECTORY}/.evergreen/run-tests.sh
 
   "run docker test":
+    - command: ec2.assume_role
+      params:
+        role_arn: ${drivers_test_secrets_role}
     - command: subprocess.exec
       type: test
       params:
         binary: bash
         env:
           ENTRYPOINT: /root/test-entrypoint.sh
-        include_expansions_in_env: [AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN, TARGET_IMAGE, ARCH]
+        include_expansions_in_env: [AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN, TARGET_IMAGE, ARCH, MONGODB_VERSION]
         args:
           - ${DRIVERS_TOOLS}/.evergreen/docker/run-server.sh
     - command: subprocess.exec
@@ -369,14 +372,6 @@ functions:
         script: |
           # Generate a test results file
           make test
-
-  "run docker aws forwarding test":
-    - command: subprocess.exec
-      type: test
-      params:
-        binary: bash
-        args:
-          - ${DRIVERS_TOOLS}/.evergreen/tests/test-docker.sh
 
   "run oidc local test":
     - command: shell.exec
@@ -984,6 +979,8 @@ tasks:
       tags: ["latest", "docker", "pr"]
       commands:
         - func: "run docker test"
+          vars:
+            MONGODB_VERSION: latest
 
     - name: "test-docker-4.2"
       tags: ["latest", "docker", "pr"]
@@ -993,11 +990,6 @@ tasks:
           TARGET_IMAGE: rhel8
           MONGODB_VERSION: 4.2
           ARCH: amd64
-
-    - name: "test-docker-aws-forwarding"
-      tags: ["docker", "pr"]
-      commands:
-        - func: "run docker aws forwarding test"
 
     - name: "test-oidc-local"
       tags: ["latest", "oidc", "pr"]
