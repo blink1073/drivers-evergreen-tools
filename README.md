@@ -49,8 +49,9 @@ nightly build from a private S3 bucket, rather than the old public
 authentication itself, using whatever AWS identity is already active. No
 separate setup script or manually-exported secrets are required. In Evergreen,
 this just needs an `ec2.assume_role` step for `drivers_test_secrets_role`
-before the download step (already wired into
-[`bootstrap mongo-orchestration`](.evergreen/config.yml)). Locally, it needs
+before the download step (wired into the global
+[`pre` block](.evergreen/config.yml), which assumes the role for every task).
+Locally, it needs
 an `AWS_PROFILE` session that's able to read the
 `drivers/devprod-release-infrastructure` AWS Secrets Vault (this is the same
 setup already documented in
@@ -63,8 +64,8 @@ than `latest`/`latest-build` (e.g. `latest-stable`, or a pinned version like
 GitHub Actions composite action) defaults to `latest-stable`. The GitHub
 Action also maps `latest` to `latest-stable` since runners typically lack AWS
 credentials; elsewhere an explicit `MONGODB_VERSION=latest` downloads the
-nightly build. Under `--local-atlas` the version is the `mongodb-atlas-local`
-Docker image tag and is not remapped.
+nightly build. Under `--local-atlas` the default stays `latest`, which is the
+`mongodb-atlas-local` Docker image tag.
 
 ## Using With GitHub Actions
 
@@ -86,7 +87,7 @@ The following inputs exist:
 
 | Name | Description |
 | --- | --- |
-| `version` | MongoDB version to install. Defaults to `latest-stable`; `latest` is also mapped to `latest-stable`, except under `local-atlas` where it is the Docker image tag. `latest-build` downloads the newest nightly build, which needs AWS credentials that GitHub Actions runners typically lack (see [Downloading "latest" MongoDB Binaries](#downloading-latest-mongodb-binaries) for that path). |
+| `version` | MongoDB version to install. Defaults to `latest-stable` (or `latest` under `local-atlas`, the Docker image tag); `latest` is otherwise mapped to `latest-stable`. `latest-build` downloads the newest nightly build, which needs AWS credentials that GitHub Actions runners typically lack (see [Downloading "latest" MongoDB Binaries](#downloading-latest-mongodb-binaries) for that path). |
 | `topology` | Topology of the deployment (server, replica_set, sharded_cluster) |
 | `auth` | Whether to enable auth |
 | `ssl` | Whether to enable SSL |

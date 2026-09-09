@@ -563,6 +563,14 @@ class CacheDB:
             yield DownloadableComponent(*row)  # type: ignore
 
 
+def _strip_presigned_query(url: str) -> str:
+    """Remove the query string from an AWS presigned URL, leaving others intact."""
+    parsed = urllib.parse.urlsplit(url)
+    if "X-Amz-" not in parsed.query and "AWSAccessKeyId" not in parsed.query:
+        return url
+    return parsed._replace(query="").geturl()
+
+
 class Cache:
     """
     Abstraction over a mongodl downloads cache directory.
@@ -599,7 +607,7 @@ class Cache:
         """
         # Presigned URLs carry a fresh signature on every call, so key the
         # cache by the query-less URL to reuse the download across runs.
-        cache_url = urllib.parse.urlsplit(url)._replace(query="").geturl()
+        cache_url = _strip_presigned_query(url)
         info = self._db(
             "SELECT etag, last_modified " "FROM mdl_http_downloads WHERE url=:url",
             url=cache_url,
@@ -625,7 +633,7 @@ class Cache:
             resp = urllib.request.urlopen(req, context=SSL_CONTEXT, timeout=30)
         except urllib.error.HTTPError as e:
             if e.code != 304:
-                raise RuntimeError(f"Failed to download [{url}]") from e
+                raise RuntimeError(f"Failed to download [{cache_url}]") from e
             assert dest.is_file(), (
                 "The download cache is missing an expected file",
                 dest,
@@ -905,7 +913,7 @@ def _dl_component(
 
     # The presigned URL embeds short-lived credentials, so keep log output
     # redacted. --no-download prints the full URL for the calling program.
-    redacted_url = urllib.parse.urlsplit(dl_url)._replace(query="").geturl()
+    redacted_url = _strip_presigned_query(dl_url)
     LOGGER.info("Download url: %s", redacted_url)
     print(dl_url if no_download else redacted_url)
 

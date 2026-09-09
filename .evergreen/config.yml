@@ -569,9 +569,6 @@ functions:
         args: [src/.evergreen/tests/test-drivers-tools-archive.sh]
 
   "run mongodb runner test partial":
-    - command: ec2.assume_role
-      params:
-        role_arn: ${drivers_test_secrets_role}
     - command: subprocess.exec
       type: test
       params:
@@ -580,9 +577,6 @@ functions:
         args: [src/.evergreen/tests/test-mongodb-runner.sh, partial]
 
   "run mongodb runner test full":
-    - command: ec2.assume_role
-      params:
-        role_arn: ${drivers_test_secrets_role}
     - command: subprocess.exec
       type: test
       params:
@@ -591,9 +585,6 @@ functions:
         args: [src/.evergreen/tests/test-mongodb-runner.sh]
 
   "run cli test partial":
-    - command: ec2.assume_role
-      params:
-        role_arn: ${drivers_test_secrets_role}
     - command: subprocess.exec
       type: test
       params:
@@ -602,9 +593,6 @@ functions:
         args: [src/.evergreen/tests/test-cli.sh, partial]
 
   "run cli test full":
-    - command: ec2.assume_role
-      params:
-        role_arn: ${drivers_test_secrets_role}
     - command: subprocess.exec
       type: test
       params:
@@ -936,7 +924,6 @@ tasks:
     - name: "test-latest-local-atlas"
       tags: ["latest", "local-atlas"]
       commands:
-        - func: "assume role"
         - func: "bootstrap mongo-orchestration"
           vars:
             VERSION: "latest"
@@ -946,7 +933,6 @@ tasks:
     - name: "test-latest-standalone"
       tags: ["latest", "standalone"]
       commands:
-        - func: "assume role"
         - func: "bootstrap mongo-orchestration"
           vars:
             VERSION: "latest"
@@ -956,7 +942,6 @@ tasks:
     - name: "test-latest-replica_set"
       tags: ["latest", "replica_set"]
       commands:
-        - func: "assume role"
         - func: "bootstrap mongo-orchestration"
           vars:
             VERSION: "latest"
@@ -966,7 +951,6 @@ tasks:
     - name: "test-latest-sharded_cluster"
       tags: ["latest", "sharded_cluster"]
       commands:
-        - func: "assume role"
         - func: "bootstrap mongo-orchestration"
           vars:
             VERSION: "latest"
@@ -976,7 +960,6 @@ tasks:
     - name: "test-latest-load_balancer"
       tags: ["latest", "load_balancer"]
       commands:
-        - func: "assume role"
         - func: "bootstrap mongo-orchestration"
           vars:
             VERSION: "latest"
