@@ -20,6 +20,8 @@ export DRIVERS_TOOLS
 export MONGO_ORCHESTRATION_HOME="$DRIVERS_TOOLS/.evergreen/orchestration"
 export MONGODB_BINARIES="$DRIVERS_TOOLS/mongodb/bin"
 echo "{ \"releases\": { \"default\": \"$MONGODB_BINARIES\" }}" > "$MONGO_ORCHESTRATION_HOME"/orchestration.config
-# Use run-orchestration with defaults.
+# Use the newest stable release; the VM has no AWS credentials for the
+# private "latest" nightly.
+export MONGODB_VERSION=latest-stable
 bash "${DRIVERS_TOOLS}"/.evergreen/run-orchestration.sh
 echo "Starting MongoDB server ... end"
