@@ -123,7 +123,7 @@ download_and_extract_mongosh ()
    EXTRACT_MONGOSH=${2:-"tar zxf"}
 
    if [ -z "$MONGOSH_DOWNLOAD_URL" ]; then
-      get_mongodb_download_url_for "$(get_distro)" latest false
+      get_mongodb_download_url_for "$(get_distro)" latest-stable false
    fi
 
    if [ -n "${MONGODB_BINARIES:-}" ]; then
