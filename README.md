@@ -57,8 +57,7 @@ Locally, it needs a working AWS identity: one with direct access to the
 it names (the same setup documented in
 [Secrets Handling](.evergreen/secrets_handling/README.md)). Any version other
 than `latest`/`latest-build` (e.g. `latest-stable`, or a pinned version like
-`8.0`) is unaffected and needs no AWS access. An unpublished version such as
-`9.0` is treated as its `latest-build` nightly and does need AWS access.
+`8.0`) is unaffected and needs no AWS access.
 
 `run-mongodb.sh` (the `mongodb-runner` entry point for local dev and the
 GitHub Actions composite action) defaults to `latest-stable`. The GitHub
