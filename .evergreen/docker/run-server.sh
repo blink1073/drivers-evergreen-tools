@@ -66,11 +66,11 @@ ARGS+=" -e REQUIRE_API_VERSION=$REQUIRE_API_VERSION"
 ARGS+=" -e DISABLE_TEST_COMMANDS=$DISABLE_TEST_COMMANDS"
 ARGS+=" -e MONGODB_DOWNLOAD_URL=$MONGODB_DOWNLOAD_URL"
 
-# Only the private nightlies need the host's AWS identity inside the
-# container. Pass it by name so the secret values stay out of the start
-# command.
+# Only the private nightlies (and unpublished versions such as 9.0) need the
+# host's AWS identity inside the container. Pass it by name so the secret
+# values stay out of the start command.
 case "$MONGODB_VERSION" in
-  latest|latest-build)
+  latest|latest-build|9.0)
     ARGS+=" -e AWS_ACCESS_KEY_ID"
     ARGS+=" -e AWS_SECRET_ACCESS_KEY"
     ARGS+=" -e AWS_SESSION_TOKEN"

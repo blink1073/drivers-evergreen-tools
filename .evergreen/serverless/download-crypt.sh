@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-MONGODB_VERSION=${MONGODB_VERSION:-latest}
+MONGODB_VERSION=${MONGODB_VERSION:-latest-stable}
 
 echo "Download crypt_shared for MongoDB ${MONGODB_VERSION}"
 

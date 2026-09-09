@@ -50,8 +50,16 @@ def _resolve_s3_client(key: str):
         return s3
 
     vault = os.environ.get("SERVER_ARTIFACTS_SECRET_VAULT", _DEFAULT_SECRET_VAULT)
-    secretsmanager = _boto3_client("secretsmanager", _SERVER_ARTIFACTS_REGION)
-    config = json.loads(secretsmanager.get_secret_value(SecretId=vault)["SecretString"])
+    try:
+        secretsmanager = _boto3_client("secretsmanager", _SERVER_ARTIFACTS_REGION)
+        config = json.loads(
+            secretsmanager.get_secret_value(SecretId=vault)["SecretString"]
+        )
+    except (ClientError, NoCredentialsError) as err:
+        raise RuntimeError(
+            "cannot resolve credentials for the private server artifacts; the "
+            f"ambient identity cannot read the {vault!r} vault"
+        ) from err
 
     sts = _boto3_client("sts", _SERVER_ARTIFACTS_REGION)
 
@@ -68,14 +76,20 @@ def _resolve_s3_client(key: str):
             return s3
 
     # Stage 3: assume the secrets role first, then the artifacts role.
-    secrets_creds = sts.assume_role(
-        RoleArn=config["DRIVERS_TEST_SECRETS_ROLE_ARN"], RoleSessionName="mongodl"
-    )["Credentials"]
-    artifacts_creds = _boto3_client(
-        "sts", _SERVER_ARTIFACTS_REGION, secrets_creds
-    ).assume_role(
-        RoleArn=config["SERVER_ARTIFACTS_ROLE_ARN"], RoleSessionName="mongodl"
-    )["Credentials"]
+    try:
+        secrets_creds = sts.assume_role(
+            RoleArn=config["DRIVERS_TEST_SECRETS_ROLE_ARN"], RoleSessionName="mongodl"
+        )["Credentials"]
+        artifacts_creds = _boto3_client(
+            "sts", _SERVER_ARTIFACTS_REGION, secrets_creds
+        ).assume_role(
+            RoleArn=config["SERVER_ARTIFACTS_ROLE_ARN"], RoleSessionName="mongodl"
+        )["Credentials"]
+    except (ClientError, NoCredentialsError) as err:
+        raise RuntimeError(
+            "cannot resolve credentials for the private server artifacts; the "
+            "ambient identity cannot assume the required roles"
+        ) from err
 
     return _boto3_client("s3", _SERVER_ARTIFACTS_REGION, artifacts_creds)
 

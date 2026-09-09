@@ -975,7 +975,6 @@ tasks:
     - name: "test-docker"
       tags: ["latest", "docker", "pr"]
       commands:
-        - func: "assume role"
         - func: "run docker test"
           vars:
             MONGODB_VERSION: latest

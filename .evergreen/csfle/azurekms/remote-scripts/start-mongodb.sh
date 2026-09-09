@@ -19,6 +19,5 @@ fi
 export DRIVERS_TOOLS
 export MONGO_ORCHESTRATION_HOME="$DRIVERS_TOOLS/.evergreen/orchestration"
 export MONGODB_BINARIES="$DRIVERS_TOOLS/mongodb/bin"
-echo "{ \"releases\": { \"default\": \"$MONGODB_BINARIES\" }}" > "$MONGO_ORCHESTRATION_HOME"/orchestration.config
 bash "${DRIVERS_TOOLS}"/.evergreen/run-mongodb.sh start
 echo "Starting MongoDB server ... end"
