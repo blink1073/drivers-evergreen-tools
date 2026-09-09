@@ -66,20 +66,21 @@ ARGS+=" -e REQUIRE_API_VERSION=$REQUIRE_API_VERSION"
 ARGS+=" -e DISABLE_TEST_COMMANDS=$DISABLE_TEST_COMMANDS"
 ARGS+=" -e MONGODB_DOWNLOAD_URL=$MONGODB_DOWNLOAD_URL"
 
-# Only the private nightly keywords reach the S3 bucket. Forward the host's
-# AWS identity for those only, by name so the secret values stay out of the
+# Forward the host's AWS identity into the container for the private nightly
+# keywords, or for any unpublished version the caller opts into by setting
+# MONGODL_PRIVATE_ARTIFACTS=1. Pass by name so secret values stay out of the
 # start command.
-case "$MONGODB_VERSION" in
-  latest|latest-build)
-    ARGS+=" -e AWS_ACCESS_KEY_ID"
-    ARGS+=" -e AWS_SECRET_ACCESS_KEY"
-    ARGS+=" -e AWS_SESSION_TOKEN"
-    ARGS+=" -e AWS_PROFILE"
-    if [ -n "${AWS_PROFILE:-}" ]; then
-      ARGS+=" -v ${HOME}/.aws:/root/.aws:ro"
-    fi
-    ;;
-esac
+if [ "$MONGODB_VERSION" = "latest" ] \
+  || [ "$MONGODB_VERSION" = "latest-build" ] \
+  || [ "${MONGODL_PRIVATE_ARTIFACTS:-}" = "1" ]; then
+  ARGS+=" -e AWS_ACCESS_KEY_ID"
+  ARGS+=" -e AWS_SECRET_ACCESS_KEY"
+  ARGS+=" -e AWS_SESSION_TOKEN"
+  ARGS+=" -e AWS_PROFILE"
+  if [ -n "${AWS_PROFILE:-}" ]; then
+    ARGS+=" -v ${HOME}/.aws:/root/.aws:ro"
+  fi
+fi
 
 # Use the ECR pull-through registry for Ubuntu images when running in CI.
 if [[ "$IMAGE" =~ ^ubuntu.* ]] && [[ -n "${CI:-}" ]]; then
