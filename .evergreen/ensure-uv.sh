@@ -123,13 +123,23 @@ _ensure_uv_copy_into_bin() {
 # _ensure_uv_scope_paths (internal)
 #
 # Move uv's cache and tool directories out of the home directory, which Evergreen
-# hosts contend over when they share one. Under CI that is $TMPDIR, recycled with
-# the task; elsewhere only UV_TOOL_DIR moves, since `uv tool install --force`
-# would otherwise overwrite a developer's own tools.
+# hosts contend over when they share one. Inside the repo's Docker containers
+# that is a fresh temp dir; under CI it is $TMPDIR, recycled with the task;
+# elsewhere only UV_TOOL_DIR moves, since `uv tool install --force` would
+# otherwise overwrite a developer's own tools.
 #
 # Best-effort, and a no-op when there is nowhere to point at. Not meant to be
 # called directly.
 _ensure_uv_scope_paths() {
+  if [ "${DOCKER_RUNNING:-}" = "true" ]; then
+    declare _root
+    _root="$(mktemp -d)"
+    export UV_CACHE_DIR="$_root/uv-cache"
+    export UV_TOOL_DIR="$_root/uv-tool"
+    export UV_PYTHON_INSTALL_DIR="$_root/uv-python"
+    return 0
+  fi
+
   if [ -n "${CI:-}" ]; then
     declare _tmp="${TMPDIR:-${TEMP:-${TMP:-}}}"
     if [ -n "$_tmp" ]; then
@@ -157,19 +167,20 @@ _ensure_uv_scope_paths() {
 # there is no pip, or when pip leaves uv missing. Not meant to be called directly.
 _ensure_uv_install() {
   declare py="${1:?}" venv_dir="${2:?}" log="${3:?}"
+  declare uv_pkg="uv$UV_VERSION"
 
   if "$py" -m pip --version >>"$log" 2>&1; then
     if "$py" -c 'import sys; sys.exit(0 if sys.prefix != sys.base_prefix else 1)'; then
       # pip refuses --user inside a venv, and the venv is the right target anyway.
       # This is how the Node OIDC tests call ensure_uv.
-      echo "uv not found; installing it with '$py -m pip install uv' into the venv..." >&2
-      "$py" -m pip install -q uv >>"$log" 2>&1 || true
+      echo "uv not found; installing it with '$py -m pip install $uv_pkg' into the venv..." >&2
+      "$py" -m pip install -q "$uv_pkg" >>"$log" 2>&1 || true
     else
       # PIP_BREAK_SYSTEM_PACKAGES bypasses PEP 668's externally-managed guard,
       # which Debian and Ubuntu enable. Safe here: --user leaves system
       # site-packages alone.
-      echo "uv not found; installing it with '$py -m pip install --user uv'..." >&2
-      PIP_BREAK_SYSTEM_PACKAGES=1 "$py" -m pip install --user -q uv >>"$log" 2>&1 || true
+      echo "uv not found; installing it with '$py -m pip install --user $uv_pkg'..." >&2
+      PIP_BREAK_SYSTEM_PACKAGES=1 "$py" -m pip install --user -q "$uv_pkg" >>"$log" 2>&1 || true
     fi
     [ -n "$(_ensure_uv_locate "$venv_dir" "$py")" ] && return 0
   fi
@@ -181,7 +192,7 @@ _ensure_uv_install() {
     # Windows venvs put the interpreter under Scripts, everything else in bin.
     declare venv_py="$venv_dir/bin/python"
     [ -x "$venv_py" ] || venv_py="$venv_dir/Scripts/python.exe"
-    "$venv_py" -m pip install -q uv >>"$log" 2>&1 || true
+    "$venv_py" -m pip install -q "$uv_pkg" >>"$log" 2>&1 || true
   fi
 }
 
@@ -192,6 +203,12 @@ _ensure_uv_install() {
 # a debug log on failure. It is safe to call repeatedly.
 ensure_uv() {
   _ensure_uv_defer_to_pyenv_global
+
+  # The known-good uv version this repo installs and seats; overridable so a
+  # consumer can pin its own. UV_UNMANAGED_INSTALL keeps a seated uv from trying
+  # to self-manage an install we placed ourselves.
+  export UV_VERSION="${UV_VERSION:-~=0.12}"
+  export UV_UNMANAGED_INSTALL="${UV_UNMANAGED_INSTALL:-1}"
 
   # Stable rather than mktemp'd, so a later call in a fresh shell reuses the venv.
   declare venv_dir="${TMPDIR:-/tmp}"

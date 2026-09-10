@@ -15,20 +15,10 @@ SCRIPT_DIR=$(dirname ${BASH_SOURCE[0]})
 
 pushd $SCRIPT_DIR >/dev/null
 
-# Ensure uv is available.
+# Ensure uv is available and seated in $DRIVERS_TOOLS/.bin; ensure_uv also
+# handles the version (UV_VERSION) and the cache/tool isolation.
 . ./ensure-uv.sh
 ensure_uv || exit 1
-
-export UV_UNMANAGED_INSTALL="1"
-
-# Point uv at a fresh temp dir in the Docker case, overriding anything
-# ensure_uv may have scoped to the checkout.
-if [ "${DOCKER_RUNNING:-}" == "true" ]; then
-  _root_dir=$(mktemp -d)
-  export UV_CACHE_DIR=$_root_dir/uv-cache
-  export UV_TOOL_DIR=$_root_dir/uv-tool
-  export UV_PYTHON_INSTALL_DIR=$_root_dir/uv-python
-fi
 
 # Ensure there is a venv available in the script dir for backward compatibility.
 if [ ! -d venv ]; then
@@ -47,8 +37,6 @@ else
 fi
 export UV_TOOL_BIN_DIR
 
-# Pin the uv binary version used by subsequent commands.
-uv tool install -q --force "uv~=0.8.0"
 [[ "${PATH:-}" =~ (^|:)"${UV_TOOL_BIN_DIR:?}"(:|$) ]] || PATH="${UV_TOOL_BIN_DIR:?}:${PATH:-}"
 command -V uv
 uv --version
