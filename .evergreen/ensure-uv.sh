@@ -64,19 +64,16 @@ _ensure_uv_toolchain_pythons() {
 
 # _ensure_uv_candidate_paths (internal)
 #
-# Print paths to a uv in known locations, most preferred first, without touching
-# PATH: one reached through PATH, an active venv, the tools venv, and user-level
-# installs. Not meant to be called directly.
+# Print paths to a uv in the places ensure_uv installs into, most preferred
+# first, without touching PATH: an active venv, the tools venv, and the pip
+# --user directory. Not meant to be called directly.
 _ensure_uv_candidate_paths() {
   declare venv_dir="${1:-}" py="${2:-}"
-
-  command -v uv 2>/dev/null || true
 
   if [ -n "${VIRTUAL_ENV:-}" ]; then
     printf '%s\n' "$VIRTUAL_ENV/bin/uv" "$VIRTUAL_ENV/Scripts/uv.exe"
   fi
   [ -n "$venv_dir" ] && printf '%s\n' "$venv_dir/bin/uv" "$venv_dir/Scripts/uv.exe"
-  [ -n "${HOME:-}" ] && printf '%s\n' "$HOME/.local/bin/uv"
 
   [ -n "$py" ] || return 0
   local user_base
@@ -98,12 +95,25 @@ _ensure_uv_locate() {
   done
 }
 
+# _ensure_uv_seated (internal)
+#
+# Return 0 when a working uv is already at $DRIVERS_TOOLS/.bin, making sure that
+# directory is on PATH. Not meant to be called directly.
+_ensure_uv_seated() {
+  [ -n "${DRIVERS_TOOLS:-}" ] || return 1
+  declare dest="$DRIVERS_TOOLS/.bin"
+  [ -x "$dest/uv" ] || return 1
+  "$dest/uv" --version >/dev/null 2>&1 || return 1
+  _ensure_uv_add_path "$dest"
+  return 0
+}
+
 # _ensure_uv_copy_into_bin (internal)
 #
-# Reseat uv into $DRIVERS_TOOLS/.bin, wherever it came from, so the repo has one
-# uv on PATH. uv is a standalone binary, so a copy is self-contained and cannot
-# dangle. Returns 0 when uv is usable there, non-zero when no candidate works.
-# Not meant to be called directly.
+# Reseat the known-good uv ensure_uv just installed into $DRIVERS_TOOLS/.bin, so
+# the repo has one uv on PATH. uv is a standalone binary, so a copy is
+# self-contained and cannot dangle. Returns 0 when uv is usable there, non-zero
+# otherwise. Not meant to be called directly.
 _ensure_uv_copy_into_bin() {
   [ -n "${DRIVERS_TOOLS:-}" ] || return 1
 
@@ -214,15 +224,17 @@ ensure_uv() {
   declare venv_dir="${TMPDIR:-/tmp}"
   venv_dir="${venv_dir%/}/drivers-tools-uv-venv"
 
-  if _ensure_uv_copy_into_bin "$venv_dir"; then
+  # The known-good uv is already in $DRIVERS_TOOLS/.bin; nothing to do.
+  if _ensure_uv_seated; then
     _ensure_uv_scope_paths
     return 0
   fi
 
-  # No uv anywhere usable; pick an interpreter: $DRIVERS_TOOLS_PYTHON, an active
-  # venv, the toolchain, then system python3. Skip one that is too old or cannot
-  # install uv (no pip and no venv), so it does not preempt a python3 that would
-  # work. Use absolute paths so a venv later on PATH cannot re-point the name.
+  # Otherwise pick an interpreter to install the known-good uv with:
+  # $DRIVERS_TOOLS_PYTHON, an active venv, the toolchain, then system python3.
+  # Skip one that is too old or cannot install uv (no pip and no venv), so it
+  # does not preempt a python3 that would work. Use absolute paths so a venv
+  # later on PATH cannot re-point the name.
   declare py="" candidate resolved
   for candidate in \
     "${DRIVERS_TOOLS_PYTHON:-}" \
@@ -244,12 +256,6 @@ ensure_uv() {
     echo "ERROR: no Python 3.8+ interpreter with pip or venv was found." >&2
     return 1
   }
-
-  # Now that an interpreter is known, a user-level uv may be findable.
-  if _ensure_uv_copy_into_bin "$venv_dir" "$py"; then
-    _ensure_uv_scope_paths
-    return 0
-  fi
 
   # We collect logs so we can display just the tail later for debugging.
   # The log is discarded if $TMPDIR is read-only.

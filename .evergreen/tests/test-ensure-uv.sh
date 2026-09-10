@@ -28,10 +28,13 @@ trap 'rm -rf "$WORK"' EXIT
 # dir so the checkout's .bin is untouched, clear the interpreter hints, and drop
 # any preinstalled uv so ensure_uv has to install one.
 reset_env() {
-  mkdir -p "$WORK/home" "$WORK/tmp" "$WORK/tools"
+  mkdir -p "$WORK/home" "$WORK/tmp"
   export HOME="$WORK/home"
   export TMPDIR="$WORK/tmp"
-  export DRIVERS_TOOLS="$WORK/tools"
+  # A fresh bin per shape so one shape's seated uv does not satisfy the next.
+  local tools_dir
+  tools_dir="$(mktemp -d "$WORK/tools.XXXXXX")"
+  export DRIVERS_TOOLS="$tools_dir"
   unset DRIVERS_TOOLS_PYTHON VIRTUAL_ENV
   local cleaned
   cleaned="$(printf '%s' "$PATH" | tr ':' '\n' | grep -vE '/\.bin$|/[^:]*\.local/bin$' | paste -sd: -)"
