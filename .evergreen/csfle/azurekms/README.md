@@ -7,11 +7,8 @@ Scripts in this directory can be used to run driver CSFLE tests on a remote Azur
 Use create-and-setup-vm.sh to create the remote Azure Virtual Machine.
 Use delete-vm.sh to delete the remote Azure Virtual Machine.
 The distro used must have the Azure Command-Line Interface (`az`) version 2.25.0 or higher installed. At time of writing, distros with `az` installed include:
-- debian10
-- debian11
 - debian12
 - ubuntu1804
-- ubuntu2004
 - ubuntu2204
 - ubuntu2404
 If another distro is required, consider filing a BUILD ticket similar to [BUILD-16836](https://jira.mongodb.org/browse/BUILD-16836).

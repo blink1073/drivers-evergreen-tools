@@ -1,32 +1,19 @@
 #!/usr/bin/env bash
 #
-# Regression tests for the ensure_uv install paths that no image or VM in the
-# current matrix reproduces. The KMS variants cover a host with both pip and
-# venv, and the kms-legacy variant covers a venv-only host without pip; these
-# two shapes cover the other two corners, and neither needs a cloud VM or a
-# container:
-#   - ensure_uv called from inside an active virtual environment. pip is present
-#     but refuses --user, so uv has to be installed into the active venv.
-#   - ensure_uv on a host with pip but no working venv module, where pip is the
-#     only way through.
-# Each runs in a private HOME/TMPDIR so the install cannot leak anywhere, and
-# skips on hosts that cannot reproduce the shape.
+# Regression tests for two ensure_uv install shapes no VM image reproduces:
+# inside an active venv, and pip-without-venv. Runs in a private HOME/TMPDIR
+# and skips on hosts that cannot reproduce a shape.
 set -eu -o pipefail
 
 SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
 . "$SCRIPT_DIR/../handle-paths.sh"
 
-# The container suite this replaces ran on Linux only, and the venv/PATH
-# handling this test relies on differs on Git-Bash. The KMS variables it covers
-# are equally Unix-only, so keep it that way.
 if [ "$(uname -s)" != "Darwin" ] && [ "$(uname -s)" != "Linux" ]; then
   echo "test-ensure-uv.sh: only runs on Linux and macOS; skipping."
   make -C "$DRIVERS_TOOLS" test
   exit 0
 fi
 
-# Setting up the shapes needs a python3 that can build a venv and one with pip.
-# Some small CI images (e.g. RHEL) ship neither, so skip rather than fail.
 if ! python3 -m venv --help >/dev/null 2>&1 || ! python3 -m pip --version >/dev/null 2>&1; then
   echo "test-ensure-uv.sh: python3-venv and python3-pip not available; skipping."
   make -C "$DRIVERS_TOOLS" test
@@ -37,24 +24,36 @@ ENSURE_UV="$SCRIPT_DIR/../ensure-uv.sh"
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/ensure-uv-test.XXXXXX")
 trap 'rm -rf "$WORK"' EXIT
 
-# Running ensure_uv with the repo's DRIVERS_TOOLS set links uv into
-# $DRIVERS_TOOLS/.bin, which would mask the directory the shape under test
-# actually installed into. Unset it so the assertion below sees the real one.
+# ensure_uv reseats uv into $DRIVERS_TOOLS/.bin. Point DRIVERS_TOOLS at a temp
+# dir so the checkout's .bin is untouched, clear the interpreter hints, and drop
+# any preinstalled uv so ensure_uv has to install one.
 reset_env() {
-  mkdir -p "$WORK/home" "$WORK/tmp"
+  mkdir -p "$WORK/home" "$WORK/tmp" "$WORK/tools"
   export HOME="$WORK/home"
   export TMPDIR="$WORK/tmp"
-  export DRIVERS_TOOLS=""
-  # Unset so ensure_uv cannot be steered to an interpreter the shape is not
-  # testing (a sourced .env or the host may set it).
-  unset DRIVERS_TOOLS_PYTHON
-  # Drop any preinstalled uv on the host (e.g. under ~/.local/bin, or linked
-  # into $DRIVERS_TOOLS/.bin by an earlier task) so ensure_uv has to install one
-  # rather than short-circuiting on what is already there. handle-paths.sh
-  # prepends the checkout's .bin, so strip those directories too.
+  export DRIVERS_TOOLS="$WORK/tools"
+  unset DRIVERS_TOOLS_PYTHON VIRTUAL_ENV
   local cleaned
   cleaned="$(printf '%s' "$PATH" | tr ':' '\n' | grep -vE '/\.bin$|/[^:]*\.local/bin$' | paste -sd: -)"
   export PATH="$cleaned"
+}
+
+# Fail unless uv is seated at $DRIVERS_TOOLS/.bin/uv, runs, and its symlink
+# target matches the case pattern in $1.
+assert_seated() {
+  local actual target
+  actual="$(command -v uv)"
+  [ "$actual" = "$DRIVERS_TOOLS/.bin/uv" ] || {
+    echo "expected uv at $DRIVERS_TOOLS/.bin/uv, got ${actual:-<none>}" >&2
+    return 1
+  }
+  uv --version >/dev/null
+  target="$(readlink "$DRIVERS_TOOLS/.bin/uv" 2>/dev/null || true)"
+  # shellcheck disable=SC2254
+  case "$target" in
+  $1) ;;
+  *) echo "expected uv symlink target to match '$1', got '${target:-<none>}'" >&2; return 1 ;;
+  esac
 }
 
 test_inside_active_venv() {
@@ -68,11 +67,7 @@ test_inside_active_venv() {
     # shellcheck source=../ensure-uv.sh
     . "$ENSURE_UV"
     ensure_uv
-    uv --version >/dev/null
-    case "$(command -v uv)" in
-    "$outer/bin/"* | "$outer/Scripts/"*) ;;
-    *) echo "expected uv from the active venv, got $(command -v uv)" >&2; return 1 ;;
-    esac
+    assert_seated "$outer/*"
   )
   echo "Testing ensure_uv inside an active venv ... done."
 }
@@ -92,10 +87,10 @@ test_no_venv_module() {
     # shellcheck source=../ensure-uv.sh
     . "$ENSURE_UV"
     ensure_uv
-    uv --version >/dev/null
-    case "$(command -v uv)" in
-    *drivers-tools-uv-venv*) echo "expected uv from the pip path, got $(command -v uv)" >&2; return 1 ;;
+    case "$(readlink "$DRIVERS_TOOLS/.bin/uv" 2>/dev/null || true)" in
+    *drivers-tools-uv-venv*) echo "expected uv from the pip path, got the fallback venv" >&2; return 1 ;;
     esac
+    assert_seated "*"
   )
   echo "Testing ensure_uv without a venv module ... done."
 }

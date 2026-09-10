@@ -19,10 +19,7 @@ See the [How-To: Set up Azure OIDC Infrastructure](https://wiki.corp.mongodb.com
 First, ensure you are running either locally or on an Evergreen host
 that has the Azure CLI 2.25+ installed.  At time of writing, distros with `az` installed include:
 
-- debian10
-- debian11
 - debian12
-- ubuntu2004
 - ubuntu2204
 - ubuntu2404
 
