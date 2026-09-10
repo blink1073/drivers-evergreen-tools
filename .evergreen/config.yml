@@ -579,6 +579,13 @@ functions:
         binary: bash
         args: [src/.evergreen/tests/test-drivers-tools-archive.sh]
 
+  "run ensure uv test":
+    - command: subprocess.exec
+      type: test
+      params:
+        binary: bash
+        args: [src/.evergreen/tests/test-ensure-uv.sh]
+
   "run mongodb runner test partial":
     - command: subprocess.exec
       type: test
@@ -1080,6 +1087,11 @@ tasks:
       tags: ["pr"]
       commands:
         - func: "run drivers tools archive test"
+
+    - name: "test-ensure-uv"
+      tags: ["pr"]
+      commands:
+        - func: "run ensure uv test"
 
     - name: "test-legacy-versions"
       commands:
@@ -1646,6 +1658,7 @@ buildvariants:
           - "test-install-binaries"
           - "test-csfle"
           - "test-drivers-tools-archive"
+          - "test-ensure-uv"
           - "test-cli-full"
           - "test-mongodb-runner-full"
           - "test-happy-eyeballs"
