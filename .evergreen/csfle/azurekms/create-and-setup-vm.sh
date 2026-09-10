@@ -45,7 +45,7 @@ for VARNAME in "${VARLIST[@]}"; do
 done
 
 # Set defaults.
-export AZUREKMS_IMAGE=${AZUREKMS_IMAGE:-"Debian:debian-11:11:0.20221020.1174"}
+export AZUREKMS_IMAGE=${AZUREKMS_IMAGE:-"Debian:debian-12:12:0.20260821.2577"}
 
 # Login.
 . "$DRIVERS_TOOLS"/.evergreen/csfle/azurekms/login.sh
