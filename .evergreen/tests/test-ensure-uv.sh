@@ -38,22 +38,15 @@ reset_env() {
   export PATH="$cleaned"
 }
 
-# Fail unless uv is seated at $DRIVERS_TOOLS/.bin/uv, runs, and its symlink
-# target matches the case pattern in $1.
+# Fail unless uv is seated at $DRIVERS_TOOLS/.bin/uv and runs.
 assert_seated() {
-  local actual target
+  local actual
   actual="$(command -v uv)"
   [ "$actual" = "$DRIVERS_TOOLS/.bin/uv" ] || {
     echo "expected uv at $DRIVERS_TOOLS/.bin/uv, got ${actual:-<none>}" >&2
     return 1
   }
   uv --version >/dev/null
-  target="$(readlink "$DRIVERS_TOOLS/.bin/uv" 2>/dev/null || true)"
-  # shellcheck disable=SC2254
-  case "$target" in
-  $1) ;;
-  *) echo "expected uv symlink target to match '$1', got '${target:-<none>}'" >&2; return 1 ;;
-  esac
 }
 
 test_inside_active_venv() {
@@ -67,7 +60,13 @@ test_inside_active_venv() {
     # shellcheck source=../ensure-uv.sh
     . "$ENSURE_UV"
     ensure_uv
-    assert_seated "$outer/*"
+    assert_seated
+    # The venv branch installs into the active venv; a copy of it is what got
+    # seated, so the venv now carries uv of its own.
+    [ -x "$outer/bin/uv" ] || [ -x "$outer/Scripts/uv.exe" ] || {
+      echo "expected uv installed into the active venv" >&2
+      return 1
+    }
   )
   echo "Testing ensure_uv inside an active venv ... done."
 }
@@ -87,10 +86,12 @@ test_no_venv_module() {
     # shellcheck source=../ensure-uv.sh
     . "$ENSURE_UV"
     ensure_uv
-    case "$(readlink "$DRIVERS_TOOLS/.bin/uv" 2>/dev/null || true)" in
-    *drivers-tools-uv-venv*) echo "expected uv from the pip path, got the fallback venv" >&2; return 1 ;;
-    esac
-    assert_seated "*"
+    assert_seated
+    # pip is the only way through, so the venv fallback must not have run.
+    if [ -e "$WORK/tmp/drivers-tools-uv-venv" ]; then
+      echo "expected uv from the pip path, not the fallback venv" >&2
+      return 1
+    fi
   )
   echo "Testing ensure_uv without a venv module ... done."
 }

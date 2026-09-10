@@ -98,12 +98,13 @@ _ensure_uv_locate() {
   done
 }
 
-# _ensure_uv_link_into_bin (internal)
+# _ensure_uv_copy_into_bin (internal)
 #
-# Reseat uv into $DRIVERS_TOOLS/.bin as a symlink, wherever it came from, so the
-# repo has one uv on PATH. Returns 0 when uv is usable there, non-zero when no
-# candidate works. Not meant to be called directly.
-_ensure_uv_link_into_bin() {
+# Reseat uv into $DRIVERS_TOOLS/.bin, wherever it came from, so the repo has one
+# uv on PATH. uv is a standalone binary, so a copy is self-contained and cannot
+# dangle. Returns 0 when uv is usable there, non-zero when no candidate works.
+# Not meant to be called directly.
+_ensure_uv_copy_into_bin() {
   [ -n "${DRIVERS_TOOLS:-}" ] || return 1
 
   declare dest="$DRIVERS_TOOLS/.bin"
@@ -115,8 +116,7 @@ _ensure_uv_link_into_bin() {
 
   [ "$src" = "$dest/uv" ] && { _ensure_uv_add_path "$dest"; return 0; }
 
-  # Windows does not grant symlink privilege by default; a copy is the fallback.
-  ln -sf "$src" "$dest/uv" 2>/dev/null || cp -f "$src" "$dest/uv" 2>/dev/null || return 1
+  cp -f "$src" "$dest/uv" 2>/dev/null || return 1
   _ensure_uv_add_path "$dest"
 }
 
@@ -197,7 +197,7 @@ ensure_uv() {
   declare venv_dir="${TMPDIR:-/tmp}"
   venv_dir="${venv_dir%/}/drivers-tools-uv-venv"
 
-  if _ensure_uv_link_into_bin "$venv_dir"; then
+  if _ensure_uv_copy_into_bin "$venv_dir"; then
     _ensure_uv_scope_paths
     return 0
   fi
@@ -229,7 +229,7 @@ ensure_uv() {
   }
 
   # Now that an interpreter is known, a user-level uv may be findable.
-  if _ensure_uv_link_into_bin "$venv_dir" "$py"; then
+  if _ensure_uv_copy_into_bin "$venv_dir" "$py"; then
     _ensure_uv_scope_paths
     return 0
   fi
@@ -241,7 +241,7 @@ ensure_uv() {
 
   _ensure_uv_install "$py" "$venv_dir" "$log"
 
-  if _ensure_uv_link_into_bin "$venv_dir" "$py"; then
+  if _ensure_uv_copy_into_bin "$venv_dir" "$py"; then
     _ensure_uv_scope_paths
     return 0
   fi
