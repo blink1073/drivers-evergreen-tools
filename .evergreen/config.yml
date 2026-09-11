@@ -568,6 +568,13 @@ functions:
         binary: bash
         args: [src/.evergreen/tests/test-drivers-tools-archive.sh]
 
+  "run ensure uv test":
+    - command: subprocess.exec
+      type: test
+      params:
+        binary: bash
+        args: [src/.evergreen/tests/test-ensure-uv.sh]
+
   "run mongodb runner test partial":
     - command: subprocess.exec
       type: test
@@ -624,6 +631,16 @@ functions:
           rm -rf ${DRIVERS_TOOLS} || true
 
 pre:
+  # Inline rather than a script because this runs before git.get_project, so the
+  # checkout that would hold the script does not exist yet.
+  - command: shell.exec
+    params:
+      shell: bash
+      script: |
+        if [ "${clear_persisted_uv|}" = "true" ]; then
+          echo "Removing any uv an earlier task left behind, so ensure_uv has to pick an interpreter."
+          rm -f "$HOME/.local/bin/uv"
+        fi
   - func: "fetch and prepare resources"
   - func: "assume role"
 
@@ -1053,6 +1070,11 @@ tasks:
       commands:
         - func: "run drivers tools archive test"
 
+    - name: "test-ensure-uv"
+      tags: ["pr"]
+      commands:
+        - func: "run ensure uv test"
+
     - name: "test-legacy-versions"
       commands:
         - func: "run legacy versions test"
@@ -1466,6 +1488,20 @@ buildvariants:
     - ".local-atlas"
     - ".github-app"
 
+# RHEL 8.2 arm64 is the host PYTHON-6005 was filed for: its system python3 is
+# 3.6, which uv publishes no distribution for, and that Evergreen image does not
+# ship uv. clear_persisted_uv drops any uv an earlier task installed under the
+# home directory, so ensure_uv has to select an interpreter and only the
+# toolchain can install one. Reversing that precedence fails this variant.
+- name: tests-rhel82-arm64
+  display_name: "RHEL 8.2 ARM64"
+  run_on:
+    - rhel82-arm64-small
+  expansions:
+    clear_persisted_uv: "true"
+  tasks:
+    - name: "test-latest-standalone"
+
 - name: tests-rhel
   display_name: RHEL Tests
   run_on:
@@ -1524,6 +1560,7 @@ buildvariants:
           - "test-install-binaries"
           - "test-csfle"
           - "test-drivers-tools-archive"
+          - "test-ensure-uv"
           - "test-cli-full"
           - "test-mongodb-runner-full"
           - "test-happy-eyeballs"

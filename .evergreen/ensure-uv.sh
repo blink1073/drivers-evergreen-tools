@@ -109,16 +109,26 @@ _ensure_uv_install() {
   declare py="${1:?}" venv_dir="${2:?}" log="${3:?}"
 
   if "$py" -m pip --version >/dev/null 2>&1; then
-    echo "uv not found; installing it with '$py -m pip install --user uv'..." >&2
+    if "$py" -c 'import sys; sys.exit(0 if sys.prefix != sys.base_prefix else 1)'; then
+      # Callers inside an active venv (e.g. the Node OIDC tests) have pip, but
+      # pip refuses `--user` there, so uv goes into the venv instead.
+      echo "uv not found; installing it with '$py -m pip install uv' into the venv..." >&2
+      "$py" -m pip install -q --upgrade pip >>"$log" 2>&1 || true
+      "$py" -m pip install -q uv >>"$log" 2>&1 || true
+      # The venv's bin, which is on PATH already only when the venv is activated.
+      _ensure_uv_add_path "$(dirname "$py")"
+    else
+      echo "uv not found; installing it with '$py -m pip install --user uv'..." >&2
 
-    # PIP_BREAK_SYSTEM_PACKAGES bypasses PEP 668's externally-managed guard, which
-    # Debian and Ubuntu enable. Safe here: `--user` leaves system site-packages
-    # alone. Upgrading pip first matters because one predating PEP 600 (20.0.2 on
-    # Ubuntu 20.04) mis-resolves uv's wheel tags.
-    PIP_BREAK_SYSTEM_PACKAGES=1 "$py" -m pip install --user -q --upgrade pip >>"$log" 2>&1 || true
-    PIP_BREAK_SYSTEM_PACKAGES=1 "$py" -m pip install --user -q uv >>"$log" 2>&1 || true
+      # PIP_BREAK_SYSTEM_PACKAGES bypasses PEP 668's externally-managed guard, which
+      # Debian and Ubuntu enable. Safe here: `--user` leaves system site-packages
+      # alone. Upgrading pip first matters because one predating PEP 600 (20.0.2 on
+      # Ubuntu 20.04) mis-resolves uv's wheel tags.
+      PIP_BREAK_SYSTEM_PACKAGES=1 "$py" -m pip install --user -q --upgrade pip >>"$log" 2>&1 || true
+      PIP_BREAK_SYSTEM_PACKAGES=1 "$py" -m pip install --user -q uv >>"$log" 2>&1 || true
 
-    _ensure_uv_add_user_bin "$py"
+      _ensure_uv_add_user_bin "$py"
+    fi
   fi
 
   uv --version >/dev/null 2>&1 && return 0
@@ -176,20 +186,18 @@ ensure_uv() {
   declare venv_dir="${TMPDIR:-/tmp}"
   venv_dir="${venv_dir%/}/drivers-tools-uv-venv"
 
-  declare py=""
-  if command -v python3 >/dev/null 2>&1; then
-    py=python3
-  else
-    # Some legacy hosts (e.g. RHEL7) have no python3 on PATH at all, only an
-    # ancient Python 2 `python` that uv does not support. Prefer the MongoDB
-    # toolchain's python3, which those hosts do have.
-    declare toolchain_py
-    toolchain_py="$(compgen -G '/opt/mongodbtoolchain/v*/bin/python3' | sort -V | tail -n1)" || true
-    if [ -n "$toolchain_py" ] && [ -x "$toolchain_py" ]; then
-      py="$toolchain_py"
-    elif command -v python >/dev/null 2>&1; then
-      py=python
-    fi
+  # Prefer the MongoDB toolchain's python3, which is modern, over the system one.
+  # On RHEL 8 the system python3 is 3.6, which uv publishes no distribution for,
+  # so a host that has the toolchain would otherwise fail to install uv. Legacy
+  # hosts (RHEL7) have no python3 on PATH at all, only an ancient Python 2.
+  declare py="" toolchain_py
+  toolchain_py="$(compgen -G '/opt/mongodbtoolchain/v*/bin/python3' | sort -V | tail -n1)" || true
+  if [ -n "$toolchain_py" ] && [ -x "$toolchain_py" ]; then
+    py="$toolchain_py"
+  elif command -v python3 >/dev/null 2>&1; then
+    py="$(command -v python3)"
+  elif command -v python >/dev/null 2>&1; then
+    py="$(command -v python)"
   fi
 
   # None of these is reliably on PATH in a fresh shell. ~/.local/bin is where uv's
