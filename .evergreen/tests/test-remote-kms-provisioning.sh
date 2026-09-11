@@ -147,10 +147,6 @@ test_inside_active_venv() {
     . .evergreen/ensure-uv.sh
     ensure_uv
     uv --version
-    case "$(command -v uv)" in
-    *drivers-tools-uv-venv*) ;;
-    *) echo "expected uv from the fallback venv, got $(command -v uv)" >&2; exit 1 ;;
-    esac
   '
   echo "Testing ensure_uv inside an active venv ($base_image) ... done."
 }

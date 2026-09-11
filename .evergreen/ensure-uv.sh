@@ -191,9 +191,14 @@ ensure_uv() {
   # python3, which is modern, over the system one: it is 3.6 on
   # rhel82-arm64-small, and rhel7 has no python3 on PATH at all.
   declare py="" toolchain_py
-  if [ -n "${VIRTUAL_ENV:-}" ] && [ -x "$VIRTUAL_ENV/bin/python" ]; then
-    py="$VIRTUAL_ENV/bin/python"
-  else
+  if [ -n "${VIRTUAL_ENV:-}" ]; then
+    if [ -x "$VIRTUAL_ENV/bin/python" ]; then
+      py="$VIRTUAL_ENV/bin/python"
+    elif [ -x "$VIRTUAL_ENV/Scripts/python.exe" ]; then
+      py="$VIRTUAL_ENV/Scripts/python.exe"
+    fi
+  fi
+  if [ -z "$py" ]; then
     toolchain_py="$(compgen -G '/opt/mongodbtoolchain/v*/bin/python3' | sort -V | tail -n1)" || true
     if [ -n "$toolchain_py" ] && [ -x "$toolchain_py" ]; then
       py="$toolchain_py"
