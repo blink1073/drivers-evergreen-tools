@@ -100,39 +100,18 @@ _ensure_uv_locate() {
   done
 }
 
-# _ensure_uv_in_bin (internal)
+# _ensure_uv_prepend_path (internal)
 #
-# Return 0 when a working uv is already at $DRIVERS_TOOLS/.bin, making sure that
-# directory is on PATH. Not meant to be called directly.
-_ensure_uv_in_bin() {
-  [ -n "${DRIVERS_TOOLS:-}" ] || return 1
-  declare dest="$DRIVERS_TOOLS/.bin"
-  [ -x "$dest/uv" ] || return 1
-  "$dest/uv" --version >/dev/null 2>&1 || return 1
-  _ensure_uv_add_path "$dest"
-  return 0
-}
-
-# _ensure_uv_copy_into_bin (internal)
-#
-# Copy the uv ensure_uv just installed into $DRIVERS_TOOLS/.bin, so
-# the repo has one uv on PATH. uv is a standalone binary, so a copy is
-# self-contained and cannot dangle. Returns 0 when uv is usable there, non-zero
-# otherwise. Not meant to be called directly.
-_ensure_uv_copy_into_bin() {
-  [ -n "${DRIVERS_TOOLS:-}" ] || return 1
-
-  declare dest="$DRIVERS_TOOLS/.bin"
-  mkdir -p "$dest" 2>/dev/null || return 1
-
+# Put the directory containing a working uv on PATH, so it is found where it
+# already lives rather than being copied anywhere. Returns 0 when a working uv
+# is located, non-zero otherwise. Not meant to be called directly.
+_ensure_uv_prepend_path() {
   declare src
   src="$(_ensure_uv_locate "${1:-}" "${2:-}")"
   [ -n "$src" ] || return 1
 
-  [ "$src" = "$dest/uv" ] && { _ensure_uv_add_path "$dest"; return 0; }
-
-  cp -f "$src" "$dest/uv" 2>/dev/null || return 1
-  _ensure_uv_add_path "$dest"
+  _ensure_uv_add_path "$(dirname "$src")"
+  return 0
 }
 
 # _ensure_uv_scope_paths (internal)
@@ -212,9 +191,9 @@ _ensure_uv_install() {
 
 # ensure_uv
 #
-# Find or install a working uv in $DRIVERS_TOOLS/.bin and configure it (isolated
-# cache and tool dirs), so a consumer has a uv on PATH. Returns non-zero and
-# prints a debug log on failure. It is safe to call repeatedly.
+# Find or install a working uv and put its directory on PATH, then configure it
+# (isolated cache and tool dirs), so a consumer has a uv available. Returns
+# non-zero and prints a debug log on failure. It is safe to call repeatedly.
 ensure_uv() {
   _ensure_uv_defer_to_pyenv_global
 
@@ -226,8 +205,8 @@ ensure_uv() {
   declare venv_dir="${TMPDIR:-/tmp}"
   venv_dir="${venv_dir%/}/drivers-tools-uv-venv"
 
-  # A working uv is already in $DRIVERS_TOOLS/.bin; nothing to do.
-  if _ensure_uv_in_bin; then
+  # A working uv already exists; point PATH at it.
+  if _ensure_uv_prepend_path "$venv_dir"; then
     _ensure_uv_scope_paths
     return 0
   fi
@@ -266,7 +245,7 @@ ensure_uv() {
 
   _ensure_uv_install "$py" "$venv_dir" "$log"
 
-  if _ensure_uv_copy_into_bin "$venv_dir" "$py"; then
+  if _ensure_uv_prepend_path "$venv_dir" "$py"; then
     _ensure_uv_scope_paths
     return 0
   fi

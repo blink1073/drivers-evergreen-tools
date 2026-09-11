@@ -34,32 +34,36 @@ ENSURE_UV="$SCRIPT_DIR/../ensure-uv.sh"
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/ensure-uv-test.XXXXXX")
 trap 'rm -rf "$WORK"' EXIT
 
-# ensure_uv installs uv into $DRIVERS_TOOLS/.bin. Point DRIVERS_TOOLS at a temp
-# dir so the checkout's .bin is untouched, clear the interpreter hints, and drop
-# any preinstalled uv so ensure_uv has to install one.
+# ensure_uv points PATH at the uv it uses and isolates its cache/tool dirs.
+# Point DRIVERS_TOOLS at a temp dir so nothing leaks into the checkout, clear
+# the interpreter hints, and drop any preinstalled uv so ensure_uv has to
+# install one.
 reset_env() {
   mkdir -p "$WORK/home" "$WORK/tmp"
   export HOME="$WORK/home"
   export TMPDIR="$WORK/tmp"
-  # A fresh bin per case so one case's uv does not satisfy the next.
+  # A fresh tools dir per case so one case's cache/tool dirs do not satisfy the
+  # next.
   local tools_dir
   tools_dir="$(mktemp -d "$WORK/tools.XXXXXX")"
   export DRIVERS_TOOLS="$tools_dir"
   unset DRIVERS_TOOLS_PYTHON VIRTUAL_ENV
-  local cleaned
-  cleaned="$(printf '%s' "$PATH" | tr ':' '\n' | grep -vE '/\.bin$|/[^:]*\.local/bin$' | paste -sd: -)"
+  # Drop any PATH entry that already holds a uv, so ensure_uv has to install its
+  # own rather than reusing whatever the host ships.
+  local cleaned="" p
+  local IFS=":"
+  for p in $PATH; do
+    [ -n "$p" ] || continue
+    [ -x "$p/uv" ] && continue
+    cleaned="${cleaned:+${cleaned}:}$p"
+  done
   export PATH="$cleaned"
 }
 
-# Fail unless uv is installed at $DRIVERS_TOOLS/.bin/uv and runs.
-assert_in_bin() {
-  local actual
-  actual="$(command -v uv)"
-  [ "$actual" = "$DRIVERS_TOOLS/.bin/uv" ] || {
-    echo "expected uv at $DRIVERS_TOOLS/.bin/uv, got ${actual:-<none>}" >&2
-    return 1
-  }
-  uv --version >/dev/null
+# Fail unless a uv is on PATH and runs.
+assert_uv_available() {
+  command -v uv >/dev/null 2>&1 || { echo "uv is not on PATH" >&2; return 1; }
+  uv --version >/dev/null || { echo "uv does not run" >&2; return 1; }
 }
 
 test_inside_active_venv() {
@@ -73,11 +77,15 @@ test_inside_active_venv() {
     # shellcheck source=../ensure-uv.sh
     . "$ENSURE_UV"
     ensure_uv
-    assert_in_bin
-    # The venv branch installs into the active venv; a copy of it is what got
-    # installed, so the venv now carries uv of its own.
+    assert_uv_available
+    # The venv branch installs into the active venv and points PATH at it, so
+    # the venv now carries uv of its own and that is the uv on PATH.
     [ -x "$outer/bin/uv" ] || [ -x "$outer/Scripts/uv.exe" ] || {
       echo "expected uv installed into the active venv" >&2
+      return 1
+    }
+    [ "$(command -v uv)" = "$outer/bin/uv" ] || {
+      echo "expected uv on PATH from the active venv, got $(command -v uv)" >&2
       return 1
     }
   )
@@ -99,7 +107,7 @@ test_no_venv_module() {
     # shellcheck source=../ensure-uv.sh
     . "$ENSURE_UV"
     ensure_uv
-    assert_in_bin
+    assert_uv_available
     # pip is the only way through, so the venv fallback must not have run.
     if [ -e "$WORK/tmp/drivers-tools-uv-venv" ]; then
       echo "expected uv from the pip path, not the fallback venv" >&2
