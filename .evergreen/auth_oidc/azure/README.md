@@ -19,12 +19,16 @@ See the [How-To: Set up Azure OIDC Infrastructure](https://wiki.corp.mongodb.com
 First, ensure you are running either locally or on an Evergreen host
 that has the Azure CLI 2.25+ installed.  At time of writing, distros with `az` installed include:
 
-- debian10
-- debian11
-- ubuntu2004
+- debian12
 - ubuntu2204
+- ubuntu2404
 
 Locally, it can be installed as `brew install az`.
+
+The Virtual Machine image, `AZUREOIDC_IMAGE`, is a separate choice from the host
+distro above. It must ship Python 3.9 or newer, because the Virtual Machine runs
+run-orchestration.sh and that is the Python uv gets installed with. It defaults
+to `Debian:debian-11:11:0.20221020.1174`, whose Python is 3.9.
 
 ## Usage
 
