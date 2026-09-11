@@ -14,8 +14,18 @@ if [ "$(uname -s)" != "Darwin" ] && [ "$(uname -s)" != "Linux" ]; then
   exit 0
 fi
 
-if ! python3 -m venv --help >/dev/null 2>&1 || ! python3 -m pip --version >/dev/null 2>&1; then
-  echo "test-ensure-uv.sh: python3-venv and python3-pip not available; skipping."
+# ensure_uv only uses a Python 3.8+ interpreter, so build its test venv with one.
+# On RHEL 8 the system python3 is 3.6; fall back to the toolchain when needed.
+PY_BIN=""
+for c in python3 $(compgen -G '/opt/mongodbtoolchain/v*/bin/python3' | sort -Vr) python; do
+  if command -v "$c" >/dev/null 2>&1 && "$(command -v "$c")" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)' >/dev/null 2>&1; then
+    PY_BIN="$(command -v "$c")"
+    break
+  fi
+done
+
+if [ -z "$PY_BIN" ] || ! "$PY_BIN" -m venv --help >/dev/null 2>&1 || ! "$PY_BIN" -m pip --version >/dev/null 2>&1; then
+  echo "test-ensure-uv.sh: no Python 3.8+ with venv and pip; skipping."
   make -C "$DRIVERS_TOOLS" test
   exit 0
 fi
@@ -54,7 +64,7 @@ assert_in_bin() {
 
 test_inside_active_venv() {
   local outer="$WORK/outer"
-  python3 -m venv --clear "$outer"
+  "$PY_BIN" -m venv --clear "$outer"
   echo "Testing ensure_uv inside an active venv ..."
   (
     reset_env
