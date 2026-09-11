@@ -1,3 +1,3 @@
-# The uv version ensure_uv installs and seats in $DRIVERS_TOOLS/.bin.
+# The uv version ensure_uv installs into $DRIVERS_TOOLS/.bin.
 # See .evergreen/ensure-uv.sh; the UV_VERSION environment variable overrides this.
 uv~=0.12.0

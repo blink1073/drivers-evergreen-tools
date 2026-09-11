@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Regression tests for two ensure_uv install shapes that no VM image reproduces:
+# Regression tests for two ensure_uv install cases that no VM image reproduces:
 # inside an active venv, and pip-without-venv. Runs in a private HOME/TMPDIR and
-# skips on hosts that cannot reproduce a shape.
+# skips on hosts that cannot reproduce a case.
 set -eu -o pipefail
 
 SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
@@ -24,14 +24,14 @@ ENSURE_UV="$SCRIPT_DIR/../ensure-uv.sh"
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/ensure-uv-test.XXXXXX")
 trap 'rm -rf "$WORK"' EXIT
 
-# ensure_uv reseats uv into $DRIVERS_TOOLS/.bin. Point DRIVERS_TOOLS at a temp
+# ensure_uv installs uv into $DRIVERS_TOOLS/.bin. Point DRIVERS_TOOLS at a temp
 # dir so the checkout's .bin is untouched, clear the interpreter hints, and drop
 # any preinstalled uv so ensure_uv has to install one.
 reset_env() {
   mkdir -p "$WORK/home" "$WORK/tmp"
   export HOME="$WORK/home"
   export TMPDIR="$WORK/tmp"
-  # A fresh bin per shape so one shape's seated uv does not satisfy the next.
+  # A fresh bin per case so one case's uv does not satisfy the next.
   local tools_dir
   tools_dir="$(mktemp -d "$WORK/tools.XXXXXX")"
   export DRIVERS_TOOLS="$tools_dir"
@@ -41,8 +41,8 @@ reset_env() {
   export PATH="$cleaned"
 }
 
-# Fail unless uv is seated at $DRIVERS_TOOLS/.bin/uv and runs.
-assert_seated() {
+# Fail unless uv is installed at $DRIVERS_TOOLS/.bin/uv and runs.
+assert_in_bin() {
   local actual
   actual="$(command -v uv)"
   [ "$actual" = "$DRIVERS_TOOLS/.bin/uv" ] || {
@@ -63,9 +63,9 @@ test_inside_active_venv() {
     # shellcheck source=../ensure-uv.sh
     . "$ENSURE_UV"
     ensure_uv
-    assert_seated
+    assert_in_bin
     # The venv branch installs into the active venv; a copy of it is what got
-    # seated, so the venv now carries uv of its own.
+    # installed, so the venv now carries uv of its own.
     [ -x "$outer/bin/uv" ] || [ -x "$outer/Scripts/uv.exe" ] || {
       echo "expected uv installed into the active venv" >&2
       return 1
@@ -89,7 +89,7 @@ test_no_venv_module() {
     # shellcheck source=../ensure-uv.sh
     . "$ENSURE_UV"
     ensure_uv
-    assert_seated
+    assert_in_bin
     # pip is the only way through, so the venv fallback must not have run.
     if [ -e "$WORK/tmp/drivers-tools-uv-venv" ]; then
       echo "expected uv from the pip path, not the fallback venv" >&2

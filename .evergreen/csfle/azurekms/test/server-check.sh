@@ -17,8 +17,7 @@ pushd "$SCRIPT_DIR/.." > /dev/null
 # shellcheck source=/dev/null
 source ./secrets-export.sh
 
-# start-mongodb.sh clones when the archive is missing, and a clone would leave
-# this variant testing master. The archive ships no .git, a clone leaves one.
+# The archive ships no .git; a clone (when it is missing) leaves one.
 if ! AZUREKMS_CMD='[ ! -d ./drivers-evergreen-tools/.git ]' ./run-command.sh < /dev/null; then
   echo "ERROR: the VM cloned drivers-evergreen-tools instead of unpacking the archive." >&2
   echo "It is running the default branch, so this run does not test this revision." >&2

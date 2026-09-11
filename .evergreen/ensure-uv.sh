@@ -95,11 +95,11 @@ _ensure_uv_locate() {
   done
 }
 
-# _ensure_uv_seated (internal)
+# _ensure_uv_in_bin (internal)
 #
 # Return 0 when a working uv is already at $DRIVERS_TOOLS/.bin, making sure that
 # directory is on PATH. Not meant to be called directly.
-_ensure_uv_seated() {
+_ensure_uv_in_bin() {
   [ -n "${DRIVERS_TOOLS:-}" ] || return 1
   declare dest="$DRIVERS_TOOLS/.bin"
   [ -x "$dest/uv" ] || return 1
@@ -110,7 +110,7 @@ _ensure_uv_seated() {
 
 # _ensure_uv_copy_into_bin (internal)
 #
-# Reseat the known-good uv ensure_uv just installed into $DRIVERS_TOOLS/.bin, so
+# Copy the known-good uv ensure_uv just installed into $DRIVERS_TOOLS/.bin, so
 # the repo has one uv on PATH. uv is a standalone binary, so a copy is
 # self-contained and cannot dangle. Returns 0 when uv is usable there, non-zero
 # otherwise. Not meant to be called directly.
@@ -208,17 +208,16 @@ _ensure_uv_install() {
 
 # ensure_uv
 #
-# Find or install a working uv and reseat it in $DRIVERS_TOOLS/.bin, so uv is
-# used from there regardless of where it came from. Returns non-zero and prints
-# a debug log on failure. It is safe to call repeatedly.
+# Find or install a known-good uv in $DRIVERS_TOOLS/.bin. Returns non-zero and
+# prints a debug log on failure. It is safe to call repeatedly.
 ensure_uv() {
   _ensure_uv_defer_to_pyenv_global
 
-  # UV_VERSION is the known-good uv version this repo installs and seats,
-  # overridable so a consumer can pin its own. The default comes from the repo's
+  # UV_VERSION is the known-good uv version this repo installs, overridable so a
+  # consumer can pin its own. The default comes from the repo's
   # requirements-uv.txt so the version is obvious and dependabot can bump it,
   # falling back to a built-in version if the file is absent. UV_UNMANAGED_INSTALL
-  # keeps a seated uv from trying to self-manage an install we placed ourselves.
+  # keeps uv from trying to self-manage an install we placed ourselves.
   if [ -z "${UV_VERSION:-}" ]; then
     local ensure_uv_dir uv_spec
     ensure_uv_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" 2>/dev/null || ensure_uv_dir=""
@@ -233,7 +232,7 @@ ensure_uv() {
   venv_dir="${venv_dir%/}/drivers-tools-uv-venv"
 
   # The known-good uv is already in $DRIVERS_TOOLS/.bin; nothing to do.
-  if _ensure_uv_seated; then
+  if _ensure_uv_in_bin; then
     _ensure_uv_scope_paths
     return 0
   fi
