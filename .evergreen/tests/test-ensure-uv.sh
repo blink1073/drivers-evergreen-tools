@@ -8,11 +8,21 @@ set -eu -o pipefail
 SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
 . "$SCRIPT_DIR/../handle-paths.sh"
 
-if [ "$(uname -s)" != "Darwin" ] && [ "$(uname -s)" != "Linux" ]; then
-  echo "test-ensure-uv.sh: only runs on Linux and macOS; skipping."
-  make -C "$DRIVERS_TOOLS" test
-  exit 0
-fi
+case "$(uname -s)" in
+  Linux | Darwin)
+    VENV_SUBDIR=bin
+    UV_NAME=uv
+    ;;
+  MINGW* | MSYS* | CYGWIN*)
+    VENV_SUBDIR=Scripts
+    UV_NAME=uv.exe
+    ;;
+  *)
+    echo "test-ensure-uv.sh: unsupported platform; skipping."
+    make -C "$DRIVERS_TOOLS" test
+    exit 0
+    ;;
+esac
 
 # ensure_uv only uses a Python 3.8+ interpreter, so build its test venv with one.
 # On RHEL 8 the system python3 is 3.6; fall back to the toolchain when needed.
@@ -54,7 +64,7 @@ reset_env() {
   local IFS=":"
   for p in $PATH; do
     [ -n "$p" ] || continue
-    [ -x "$p/uv" ] && continue
+    if [ -x "$p/uv" ] || [ -x "$p/uv.exe" ]; then continue; fi
     cleaned="${cleaned:+${cleaned}:}$p"
   done
   export PATH="$cleaned"
@@ -68,23 +78,24 @@ assert_uv_available() {
 
 test_inside_active_venv() {
   local outer="$WORK/outer"
+  local venv_bin="$outer/$VENV_SUBDIR"
   "$PY_BIN" -m venv --clear "$outer"
   echo "Testing ensure_uv inside an active venv ..."
   (
     reset_env
     export VIRTUAL_ENV="$outer"
-    export PATH="$outer/bin:$PATH"
+    export PATH="$venv_bin:$PATH"
     # shellcheck source=../ensure-uv.sh
     . "$ENSURE_UV"
     ensure_uv
     assert_uv_available
     # The venv branch installs into the active venv and points PATH at it, so
     # the venv now carries uv of its own and that is the uv on PATH.
-    [ -x "$outer/bin/uv" ] || [ -x "$outer/Scripts/uv.exe" ] || {
-      echo "expected uv installed into the active venv" >&2
+    [ -x "$venv_bin/$UV_NAME" ] || {
+      echo "expected $UV_NAME installed into the active venv" >&2
       return 1
     }
-    [ "$(command -v uv)" = "$outer/bin/uv" ] || {
+    [ "$(command -v uv)" = "$venv_bin/$UV_NAME" ] || {
       echo "expected uv on PATH from the active venv, got $(command -v uv)" >&2
       return 1
     }
