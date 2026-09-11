@@ -187,9 +187,10 @@ ensure_uv() {
   venv_dir="${venv_dir%/}/drivers-tools-uv-venv"
 
   # Prefer the MongoDB toolchain's python3, which is modern, over the system one.
-  # On RHEL 8 the system python3 is 3.6, which uv publishes no distribution for,
-  # so a host that has the toolchain would otherwise fail to install uv. Legacy
-  # hosts (RHEL7) have no python3 on PATH at all, only an ancient Python 2.
+  # On the rhel82-arm64-small Evergreen image the system python3 is 3.6, which uv
+  # publishes no distribution for, so a host that has the toolchain would
+  # otherwise fail to install uv. Legacy hosts (rhel7) have no python3 on PATH at
+  # all, only an ancient Python 2.
   declare py="" toolchain_py
   toolchain_py="$(compgen -G '/opt/mongodbtoolchain/v*/bin/python3' | sort -V | tail -n1)" || true
   if [ -n "$toolchain_py" ] && [ -x "$toolchain_py" ]; then
