@@ -161,19 +161,20 @@ _ensure_uv_scope_paths() {
 # there is no pip, or when pip leaves uv missing. Not meant to be called directly.
 _ensure_uv_install() {
   declare py="${1:?}" venv_dir="${2:?}" log="${3:?}"
+  declare uv_pkg="uv$UV_VERSION"
 
   if "$py" -m pip --version >>"$log" 2>&1; then
     if "$py" -c 'import sys; sys.exit(0 if sys.prefix != sys.base_prefix else 1)'; then
       # pip refuses --user inside a venv, and the venv is the right target anyway.
       # This is how the Node OIDC tests call ensure_uv.
-      echo "uv not found; installing it with '$py -m pip install uv' into the venv..." >&2
-      "$py" -m pip install -q uv >>"$log" 2>&1 || true
+      echo "uv not found; installing it with '$py -m pip install $uv_pkg' into the venv..." >&2
+      "$py" -m pip install -q "$uv_pkg" >>"$log" 2>&1 || true
     else
       # PIP_BREAK_SYSTEM_PACKAGES bypasses PEP 668's externally-managed guard,
       # which Debian and Ubuntu enable. Safe here: --user leaves system
       # site-packages alone.
-      echo "uv not found; installing it with '$py -m pip install --user uv'..." >&2
-      PIP_BREAK_SYSTEM_PACKAGES=1 "$py" -m pip install --user -q uv >>"$log" 2>&1 || true
+      echo "uv not found; installing it with '$py -m pip install --user $uv_pkg'..." >&2
+      PIP_BREAK_SYSTEM_PACKAGES=1 "$py" -m pip install --user -q "$uv_pkg" >>"$log" 2>&1 || true
     fi
     [ -n "$(_ensure_uv_locate "$venv_dir" "$py")" ] && return 0
   fi
@@ -185,7 +186,7 @@ _ensure_uv_install() {
     # Windows venvs put the interpreter under Scripts, everything else in bin.
     declare venv_py="$venv_dir/bin/python"
     [ -x "$venv_py" ] || venv_py="$venv_dir/Scripts/python.exe"
-    "$venv_py" -m pip install -q uv >>"$log" 2>&1 || true
+    "$venv_py" -m pip install -q "$uv_pkg" >>"$log" 2>&1 || true
   fi
 }
 
@@ -196,6 +197,17 @@ _ensure_uv_install() {
 # non-zero and prints a debug log on failure. It is safe to call repeatedly.
 ensure_uv() {
   _ensure_uv_defer_to_pyenv_global
+
+  # UV_VERSION is the uv version this repo wants, sourced from requirements-uv.txt
+  # (the same file install-cli pins from), so the uv ensure_uv installs is the one
+  # cached for install-cli to reuse. UV_VERSION overrides it when set.
+  if [ -z "${UV_VERSION:-}" ]; then
+    local ensure_uv_dir uv_spec
+    ensure_uv_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" 2>/dev/null || ensure_uv_dir=""
+    uv_spec="$(sed -n 's/^uv//p' "$ensure_uv_dir/../requirements-uv.txt" 2>/dev/null | head -n1)" || true
+    UV_VERSION="${uv_spec}"
+  fi
+  export UV_VERSION
 
   # UV_UNMANAGED_INSTALL keeps uv from trying to self-manage an install we
   # placed ourselves.
