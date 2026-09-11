@@ -168,6 +168,7 @@ _ensure_uv_install() {
       # Callers inside an active venv (e.g. the Node OIDC tests) have pip, but
       # pip refuses `--user` there, so uv goes into the venv instead.
       echo "uv not found; installing it with '$py -m pip install $uv_pkg' into the venv..." >&2
+      "$py" -m pip install -q --upgrade pip >>"$log" 2>&1 || true
       "$py" -m pip install -q "$uv_pkg" >>"$log" 2>&1 || true
     else
       # PIP_BREAK_SYSTEM_PACKAGES bypasses PEP 668's externally-managed guard,
