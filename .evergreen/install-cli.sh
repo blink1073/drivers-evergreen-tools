@@ -15,8 +15,8 @@ SCRIPT_DIR=$(dirname ${BASH_SOURCE[0]})
 
 pushd $SCRIPT_DIR >/dev/null
 
-# Ensure uv is available and seated in $DRIVERS_TOOLS/.bin; ensure_uv also
-# handles the version (UV_VERSION) and the cache/tool isolation.
+# Ensure a working uv is on PATH; ensure_uv also configures its cache and tool
+# dirs. The CLI then pins the desired uv version below.
 . ./ensure-uv.sh
 ensure_uv || exit 1
 
@@ -38,6 +38,12 @@ fi
 export UV_TOOL_BIN_DIR
 
 [[ "${PATH:-}" =~ (^|:)"${UV_TOOL_BIN_DIR:?}"(:|$) ]] || PATH="${UV_TOOL_BIN_DIR:?}:${PATH:-}"
+
+# Pin the uv version the CLI tooling uses, so it is reproducible. The source of
+# truth is the repo's requirements-uv.txt; versions uv already satisfies are
+# left alone.
+UV_SPEC="$(sed -n 's/^uv//p' "$SCRIPT_DIR/../requirements-uv.txt" 2>/dev/null | head -n1)" || true
+uv tool install -q --force "uv${UV_SPEC:-}"
 command -V uv
 uv --version
 

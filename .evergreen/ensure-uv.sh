@@ -115,7 +115,7 @@ _ensure_uv_in_bin() {
 
 # _ensure_uv_copy_into_bin (internal)
 #
-# Copy the known-good uv ensure_uv just installed into $DRIVERS_TOOLS/.bin, so
+# Copy the uv ensure_uv just installed into $DRIVERS_TOOLS/.bin, so
 # the repo has one uv on PATH. uv is a standalone binary, so a copy is
 # self-contained and cannot dangle. Returns 0 when uv is usable there, non-zero
 # otherwise. Not meant to be called directly.
@@ -182,20 +182,19 @@ _ensure_uv_scope_paths() {
 # there is no pip, or when pip leaves uv missing. Not meant to be called directly.
 _ensure_uv_install() {
   declare py="${1:?}" venv_dir="${2:?}" log="${3:?}"
-  declare uv_pkg="uv$UV_VERSION"
 
   if "$py" -m pip --version >>"$log" 2>&1; then
     if "$py" -c 'import sys; sys.exit(0 if sys.prefix != sys.base_prefix else 1)'; then
       # pip refuses --user inside a venv, and the venv is the right target anyway.
       # This is how the Node OIDC tests call ensure_uv.
-      echo "uv not found; installing it with '$py -m pip install $uv_pkg' into the venv..." >&2
-      "$py" -m pip install -q "$uv_pkg" >>"$log" 2>&1 || true
+      echo "uv not found; installing it with '$py -m pip install uv' into the venv..." >&2
+      "$py" -m pip install -q uv >>"$log" 2>&1 || true
     else
       # PIP_BREAK_SYSTEM_PACKAGES bypasses PEP 668's externally-managed guard,
       # which Debian and Ubuntu enable. Safe here: --user leaves system
       # site-packages alone.
-      echo "uv not found; installing it with '$py -m pip install --user $uv_pkg'..." >&2
-      PIP_BREAK_SYSTEM_PACKAGES=1 "$py" -m pip install --user -q "$uv_pkg" >>"$log" 2>&1 || true
+      echo "uv not found; installing it with '$py -m pip install --user uv'..." >&2
+      PIP_BREAK_SYSTEM_PACKAGES=1 "$py" -m pip install --user -q uv >>"$log" 2>&1 || true
     fi
     [ -n "$(_ensure_uv_locate "$venv_dir" "$py")" ] && return 0
   fi
@@ -207,42 +206,33 @@ _ensure_uv_install() {
     # Windows venvs put the interpreter under Scripts, everything else in bin.
     declare venv_py="$venv_dir/bin/python"
     [ -x "$venv_py" ] || venv_py="$venv_dir/Scripts/python.exe"
-    "$venv_py" -m pip install -q "$uv_pkg" >>"$log" 2>&1 || true
+    "$venv_py" -m pip install -q uv >>"$log" 2>&1 || true
   fi
 }
 
 # ensure_uv
 #
-# Find or install a known-good uv in $DRIVERS_TOOLS/.bin. Returns non-zero and
+# Find or install a working uv in $DRIVERS_TOOLS/.bin and configure it (isolated
+# cache and tool dirs), so a consumer has a uv on PATH. Returns non-zero and
 # prints a debug log on failure. It is safe to call repeatedly.
 ensure_uv() {
   _ensure_uv_defer_to_pyenv_global
 
-  # UV_VERSION is the known-good uv version this repo installs, overridable so a
-  # consumer can pin its own. The default comes from the repo's
-  # requirements-uv.txt so the version is obvious and dependabot can bump it,
-  # falling back to a built-in version if the file is absent. UV_UNMANAGED_INSTALL
-  # keeps uv from trying to self-manage an install we placed ourselves.
-  if [ -z "${UV_VERSION:-}" ]; then
-    local ensure_uv_dir uv_spec
-    ensure_uv_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" 2>/dev/null || ensure_uv_dir=""
-    uv_spec="$(sed -n 's/^uv//p' "$ensure_uv_dir/../requirements-uv.txt" 2>/dev/null | head -n1)" || true
-    UV_VERSION="${uv_spec:-~=0.12.0}"
-  fi
-  export UV_VERSION
+  # UV_UNMANAGED_INSTALL keeps uv from trying to self-manage an install we
+  # placed ourselves.
   export UV_UNMANAGED_INSTALL="${UV_UNMANAGED_INSTALL:-1}"
 
   # Stable rather than mktemp'd, so a later call in a fresh shell reuses the venv.
   declare venv_dir="${TMPDIR:-/tmp}"
   venv_dir="${venv_dir%/}/drivers-tools-uv-venv"
 
-  # The known-good uv is already in $DRIVERS_TOOLS/.bin; nothing to do.
+  # A working uv is already in $DRIVERS_TOOLS/.bin; nothing to do.
   if _ensure_uv_in_bin; then
     _ensure_uv_scope_paths
     return 0
   fi
 
-  # Otherwise pick an interpreter to install the known-good uv with:
+  # Otherwise pick an interpreter to install a working uv with:
   # $DRIVERS_TOOLS_PYTHON, an active venv, the toolchain, then system python3.
   # Skip one that is too old or cannot install uv (no pip and no venv), so it
   # does not preempt a python3 that would work. Use absolute paths so a venv
