@@ -64,9 +64,11 @@ _ensure_uv_toolchain_pythons() {
 
 # _ensure_uv_candidate_paths (internal)
 #
-# Print paths to a uv in the places ensure_uv installs into, most preferred
-# first, without touching PATH: an active venv, the tools venv, and the pip
-# --user directory. Not meant to be called directly.
+# Print paths to a uv, most preferred first, without touching PATH: an active
+# venv, the tools venv, the pip --user directory, and finally a uv already on
+# PATH. The last is only reached when the install destinations are empty, so a
+# host that ships a working uv but cannot install one still gets a uv. Not
+# meant to be called directly.
 _ensure_uv_candidate_paths() {
   declare venv_dir="${1:-}" py="${2:-}"
 
@@ -75,10 +77,13 @@ _ensure_uv_candidate_paths() {
   fi
   [ -n "$venv_dir" ] && printf '%s\n' "$venv_dir/bin/uv" "$venv_dir/Scripts/uv.exe"
 
-  [ -n "$py" ] || return 0
-  local user_base
-  user_base="$("$py" -m site --user-base 2>/dev/null)" || return 0
-  printf '%s\n' "$user_base/bin/uv" "$user_base/Scripts/uv.exe"
+  if [ -n "$py" ]; then
+    local user_base
+    user_base="$("$py" -m site --user-base 2>/dev/null)" || true
+    [ -n "$user_base" ] && printf '%s\n' "$user_base/bin/uv" "$user_base/Scripts/uv.exe"
+  fi
+
+  command -v uv 2>/dev/null || true
 }
 
 # _ensure_uv_locate (internal)
