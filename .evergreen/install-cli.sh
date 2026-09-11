@@ -15,20 +15,10 @@ SCRIPT_DIR=$(dirname ${BASH_SOURCE[0]})
 
 pushd $SCRIPT_DIR >/dev/null
 
-# Ensure uv is available.
+# Ensure a working uv is on PATH; ensure_uv also configures its cache and tool
+# dirs. The CLI then pins the desired uv version below.
 . ./ensure-uv.sh
 ensure_uv || exit 1
-
-export UV_UNMANAGED_INSTALL="1"
-
-# Point uv at a fresh temp dir in the Docker case, overriding anything
-# ensure_uv may have scoped to the checkout.
-if [ "${DOCKER_RUNNING:-}" == "true" ]; then
-  _root_dir=$(mktemp -d)
-  export UV_CACHE_DIR=$_root_dir/uv-cache
-  export UV_TOOL_DIR=$_root_dir/uv-tool
-  export UV_PYTHON_INSTALL_DIR=$_root_dir/uv-python
-fi
 
 # Ensure there is a venv available in the script dir for backward compatibility.
 if [ ! -d venv ]; then
@@ -47,9 +37,13 @@ else
 fi
 export UV_TOOL_BIN_DIR
 
-# Pin the uv binary version used by subsequent commands.
-uv tool install -q --force "uv~=0.8.0"
 [[ "${PATH:-}" =~ (^|:)"${UV_TOOL_BIN_DIR:?}"(:|$) ]] || PATH="${UV_TOOL_BIN_DIR:?}:${PATH:-}"
+
+# Pin the uv version the CLI tooling uses, so it is reproducible. The source of
+# truth is the repo's requirements-uv.txt; versions uv already satisfies are
+# left alone.
+UV_SPEC="$(sed -n 's/^uv//p' "$SCRIPT_DIR/../requirements-uv.txt" 2>/dev/null | head -n1)" || true
+uv tool install -q --force "uv${UV_SPEC:-}"
 command -V uv
 uv --version
 
