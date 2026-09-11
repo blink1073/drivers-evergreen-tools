@@ -214,10 +214,18 @@ _ensure_uv_install() {
 ensure_uv() {
   _ensure_uv_defer_to_pyenv_global
 
-  # The known-good uv version this repo installs and seats; overridable so a
-  # consumer can pin its own. UV_UNMANAGED_INSTALL keeps a seated uv from trying
-  # to self-manage an install we placed ourselves.
-  export UV_VERSION="${UV_VERSION:-~=0.12}"
+  # UV_VERSION is the known-good uv version this repo installs and seats,
+  # overridable so a consumer can pin its own. The default comes from the repo's
+  # requirements-uv.txt so the version is obvious and dependabot can bump it,
+  # falling back to a built-in version if the file is absent. UV_UNMANAGED_INSTALL
+  # keeps a seated uv from trying to self-manage an install we placed ourselves.
+  if [ -z "${UV_VERSION:-}" ]; then
+    local ensure_uv_dir uv_spec
+    ensure_uv_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" 2>/dev/null || ensure_uv_dir=""
+    uv_spec="$(sed -n 's/^uv//p' "$ensure_uv_dir/../requirements-uv.txt" 2>/dev/null | head -n1)" || true
+    UV_VERSION="${uv_spec:-~=0.12.0}"
+  fi
+  export UV_VERSION
   export UV_UNMANAGED_INSTALL="${UV_UNMANAGED_INSTALL:-1}"
 
   # Stable rather than mktemp'd, so a later call in a fresh shell reuses the venv.
