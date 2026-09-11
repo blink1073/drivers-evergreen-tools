@@ -165,8 +165,8 @@ _ensure_uv_install() {
 
   if "$py" -m pip --version >>"$log" 2>&1; then
     if "$py" -c 'import sys; sys.exit(0 if sys.prefix != sys.base_prefix else 1)'; then
-      # pip refuses --user inside a venv, and the venv is the right target anyway.
-      # This is how the Node OIDC tests call ensure_uv.
+      # Callers inside an active venv (e.g. the Node OIDC tests) have pip, but
+      # pip refuses `--user` there, so uv goes into the venv instead.
       echo "uv not found; installing it with '$py -m pip install $uv_pkg' into the venv..." >&2
       "$py" -m pip install -q "$uv_pkg" >>"$log" 2>&1 || true
     else
