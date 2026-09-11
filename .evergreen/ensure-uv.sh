@@ -15,28 +15,125 @@ if [ -z "$BASH" ]; then
   return 1
 fi
 
+# _ensure_uv_add_path (internal)
+#
+# Prepend $1 to PATH unless it is already there, which keeps repeated ensure_uv
+# calls from growing PATH without end. Not meant to be called directly.
+_ensure_uv_add_path() {
+  declare dir="${1:?}"
+  case ":${PATH:-}:" in
+  *":$dir:"*) ;;
+  *) export PATH="$dir:${PATH:-}" ;;
+  esac
+}
+
+# _ensure_uv_defer_to_pyenv_global (internal)
+#
+# pyenv shims enforce whichever .python-version file sits above the working
+# directory; on the RHEL 8 zseries and power8 hosts that file names a version
+# pyenv lacks, so even `uv --version` fails. When a .python-version is in play,
+# defer to pyenv's global version. A no-op otherwise, and when pyenv is absent.
+# Not meant to be called directly.
+_ensure_uv_defer_to_pyenv_global() {
+  command -v pyenv >/dev/null 2>&1 || return 0
+
+  local dir="$PWD"
+  while [ "$dir" != "/" ]; do
+    if [ -e "$dir/.python-version" ]; then
+      local pyenv_global
+      pyenv_global="$(pyenv global 2>/dev/null | head -n1)" || true
+      [ -n "$pyenv_global" ] && export PYENV_VERSION="$pyenv_global"
+      return 0
+    fi
+    dir="$(dirname "$dir")"
+  done
+}
+
+# _ensure_uv_toolchain_pythons (internal)
+#
+# Print the MongoDB toolchain python interpreters, newest version first. GNU
+# sort -V is unavailable on the BSD sort that shipped before macOS 26, so fall
+# back to plain reverse sort; the sparse vN.n names order correctly that way.
+# Not meant to be called directly.
+_ensure_uv_toolchain_pythons() {
+  local paths
+  paths="$(compgen -G '/opt/mongodbtoolchain/v*/bin/python3' 2>/dev/null)" || return 0
+  [ -n "$paths" ] || return 0
+  printf '%s\n' "$paths" | sort -Vr 2>/dev/null || printf '%s\n' "$paths" | sort -r
+}
+
+# _ensure_uv_candidate_paths (internal)
+#
+# Print paths to a uv, most preferred first, without touching PATH: an active
+# venv, the tools venv, the pip --user directory, and finally a uv already on
+# PATH. The last is only reached when the install destinations are empty, so a
+# host that ships a working uv but cannot install one still gets a uv. Not
+# meant to be called directly.
+_ensure_uv_candidate_paths() {
+  declare venv_dir="${1:-}" py="${2:-}"
+
+  if [ -n "${VIRTUAL_ENV:-}" ]; then
+    printf '%s\n' "$VIRTUAL_ENV/bin/uv" "$VIRTUAL_ENV/Scripts/uv.exe"
+  fi
+  [ -n "$venv_dir" ] && printf '%s\n' "$venv_dir/bin/uv" "$venv_dir/Scripts/uv.exe"
+
+  if [ -n "$py" ]; then
+    local user_base
+    user_base="$("$py" -m site --user-base 2>/dev/null)" || true
+    [ -n "$user_base" ] && printf '%s\n' "$user_base/bin/uv" "$user_base/Scripts/uv.exe"
+  fi
+
+  command -v uv 2>/dev/null || true
+}
+
+# _ensure_uv_locate (internal)
+#
+# Print the first candidate uv that actually runs, or nothing. Not meant to be
+# called directly.
+_ensure_uv_locate() {
+  local candidate
+  for candidate in $(_ensure_uv_candidate_paths "${1:-}" "${2:-}"); do
+    [ -x "$candidate" ] || continue
+    "$candidate" --version >/dev/null 2>&1 || continue
+    printf '%s\n' "$candidate"
+    return 0
+  done
+}
+
+# _ensure_uv_prepend_path (internal)
+#
+# Put the directory containing a working uv on PATH, so it is found where it
+# already lives rather than being copied anywhere. Returns 0 when a working uv
+# is located, non-zero otherwise. Not meant to be called directly.
+_ensure_uv_prepend_path() {
+  declare src
+  src="$(_ensure_uv_locate "${1:-}" "${2:-}")"
+  [ -n "$src" ] || return 1
+
+  _ensure_uv_add_path "$(dirname "$src")"
+  return 0
+}
+
 # _ensure_uv_scope_paths (internal)
 #
-# Keeps uv's shared state out of its default home-directory locations
-# (~/.cache/uv, ~/.local/share/uv/{tools,python}), which would otherwise be
-# contended when Evergreen hosts are reused or share a home directory.
+# Move uv's cache and tool directories out of the home directory, which Evergreen
+# hosts contend over when they share one. Inside the repo's Docker containers
+# that is a fresh temp dir; under CI it is $TMPDIR, recycled with the task;
+# elsewhere only UV_TOOL_DIR moves, since `uv tool install --force` would
+# otherwise overwrite a developer's own tools.
 #
-# In CI everything goes under the task's temp directory. Evergreen points
-# TMPDIR at a per-task directory outside both $DRIVERS_TOOLS and
-# $PROJECT_DIRECTORY, so uv's caches are recycled with the task and never end
-# up in the uploaded failure artifacts, which are packed from those two trees.
-#
-# Outside CI only UV_TOOL_DIR is redirected, since `uv tool install --force`
-# would otherwise overwrite a developer's globally installed tools (see
-# install-cli.sh, which pins its own uv that way). The cache is deliberately
-# left shared so local runs do not re-download everything.
-#
-# A no-op if there is nowhere suitable to point at: this is best-effort
-# hygiene, not a correctness requirement, and ensure_uv() is reachable from
-# child shells that do not inherit DRIVERS_TOOLS (handle-paths.sh assigns it
-# without exporting). Called automatically by ensure_uv() on success; not
-# meant to be called directly.
+# Best-effort, and a no-op when there is nowhere to point at. Not meant to be
+# called directly.
 _ensure_uv_scope_paths() {
+  if [ "${DOCKER_RUNNING:-}" = "true" ]; then
+    declare _root
+    _root="$(mktemp -d)"
+    export UV_CACHE_DIR="$_root/uv-cache"
+    export UV_TOOL_DIR="$_root/uv-tool"
+    export UV_PYTHON_INSTALL_DIR="$_root/uv-python"
+    return 0
+  fi
+
   if [ -n "${CI:-}" ]; then
     declare _tmp="${TMPDIR:-${TEMP:-${TMP:-}}}"
     if [ -n "$_tmp" ]; then
@@ -57,178 +154,121 @@ _ensure_uv_scope_paths() {
   export UV_TOOL_DIR="${DRIVERS_TOOLS}/.local/uv-tool"
 }
 
-# _ensure_uv_add_path (internal)
-#
-# Prepend $1 to PATH unless it is already there, which keeps repeated ensure_uv
-# calls from growing PATH without end. Not meant to be called directly.
-_ensure_uv_add_path() {
-  declare dir="${1:?}"
-  case ":${PATH:-}:" in
-  *":$dir:"*) ;;
-  *) export PATH="$dir:${PATH:-}" ;;
-  esac
-}
-
-# _ensure_uv_add_user_bin (internal)
-#
-# Put $1's `pip install --user` script directory on PATH. That directory is
-# version and platform specific (~/.local/bin on Linux, ~/Library/Python/X.Y/bin
-# on macOS, %APPDATA%\Python\PythonXY\Scripts on Windows), so ask the interpreter
-# rather than assuming. Only one of bin/Scripts exists on any given platform, so
-# adding both is harmless.
-#
-# A no-op if the interpreter cannot report it. Not meant to be called directly.
-_ensure_uv_add_user_bin() {
-  declare base
-  base="$("${1:?}" -m site --user-base 2>/dev/null)" || return 0
-  [ -n "$base" ] || return 0
-  _ensure_uv_add_path "$base/bin"
-  _ensure_uv_add_path "$base/Scripts"
-}
-
 # _ensure_uv_install (internal)
 #
-# Install uv using interpreter $1, building a virtual environment at $2 if needed,
-# with all output appended to $3. Not meant to be called directly.
-#
-# Tries `pip install --user` and then a virtual environment, because no single
-# method covers every host we run on:
-#
-# - Remote KMS VMs provisioned before python3-pip was added to their setup scripts
-#   have no system pip. These are real Debian 11 cloud images, and Debian disables
-#   `ensurepip` for the system python, so only the venv works there.
-# - Evergreen's debian11 images have pip but no python3-venv, so `python3 -m venv`
-#   fails outright and only pip works there.
-# - Callers already inside an active venv have pip, but pip refuses `--user`
-#   inside one, so again only the venv works.
-# - The docker test images install a deadsnakes python with venv but no pip, so the
-#   venv covers them as well.
-#
-# Every step tolerates failure, since a later one may still succeed.
+# Install uv with interpreter $1, using $2 for the virtual-environment fallback
+# and appending all output to $3. pip is tried first; a venv is the fallback when
+# there is no pip, or when pip leaves uv missing. Not meant to be called directly.
 _ensure_uv_install() {
   declare py="${1:?}" venv_dir="${2:?}" log="${3:?}"
+  declare uv_pkg="uv$UV_VERSION"
 
-  if "$py" -m pip --version >/dev/null 2>&1; then
-    echo "uv not found; installing it with '$py -m pip install --user uv'..." >&2
-
-    # PIP_BREAK_SYSTEM_PACKAGES bypasses PEP 668's externally-managed guard, which
-    # Debian and Ubuntu enable. Safe here: `--user` leaves system site-packages
-    # alone. Upgrading pip first matters because one predating PEP 600 (20.0.2 on
-    # Ubuntu 20.04) mis-resolves uv's wheel tags.
-    PIP_BREAK_SYSTEM_PACKAGES=1 "$py" -m pip install --user -q --upgrade pip >>"$log" 2>&1 || true
-    PIP_BREAK_SYSTEM_PACKAGES=1 "$py" -m pip install --user -q uv >>"$log" 2>&1 || true
-
-    _ensure_uv_add_user_bin "$py"
+  if "$py" -m pip --version >>"$log" 2>&1; then
+    if "$py" -c 'import sys; sys.exit(0 if sys.prefix != sys.base_prefix else 1)'; then
+      # pip refuses --user inside a venv, and the venv is the right target anyway.
+      # This is how the Node OIDC tests call ensure_uv.
+      echo "uv not found; installing it with '$py -m pip install $uv_pkg' into the venv..." >&2
+      "$py" -m pip install -q "$uv_pkg" >>"$log" 2>&1 || true
+    else
+      # PIP_BREAK_SYSTEM_PACKAGES bypasses PEP 668's externally-managed guard,
+      # which Debian and Ubuntu enable. Safe here: --user leaves system
+      # site-packages alone.
+      echo "uv not found; installing it with '$py -m pip install --user $uv_pkg'..." >&2
+      PIP_BREAK_SYSTEM_PACKAGES=1 "$py" -m pip install --user -q "$uv_pkg" >>"$log" 2>&1 || true
+    fi
+    [ -n "$(_ensure_uv_locate "$venv_dir" "$py")" ] && return 0
   fi
 
-  uv --version >/dev/null 2>&1 && return 0
-
-  echo "uv not found; installing it into a virtual environment at $venv_dir..." >&2
-
-  # --clear replaces a previously broken venv; a working one was found already.
-  "$py" -m venv --clear "$venv_dir" >>"$log" 2>&1 || return 0
-
-  # Windows venvs put the interpreter under Scripts, everything else in bin. A
-  # venv seeds itself with the system interpreter's pip, so it needs the same
-  # upgrade for the same reason.
-  declare venv_py="$venv_dir/bin/python"
-  [ -x "$venv_py" ] || venv_py="$venv_dir/Scripts/python.exe"
-  "$venv_py" -m pip install -q --upgrade pip >>"$log" 2>&1 || true
-  "$venv_py" -m pip install -q uv >>"$log" 2>&1 || true
+  # No pip at all, or the pip install ended without a usable uv (Debian refuses
+  # ensurepip outside a venv). A venv is the fallback either way.
+  echo "uv still not found; building a virtual environment at $venv_dir..." >&2
+  if "$py" -m venv --clear "$venv_dir" >>"$log" 2>&1; then
+    # Windows venvs put the interpreter under Scripts, everything else in bin.
+    declare venv_py="$venv_dir/bin/python"
+    [ -x "$venv_py" ] || venv_py="$venv_dir/Scripts/python.exe"
+    "$venv_py" -m pip install -q "$uv_pkg" >>"$log" 2>&1 || true
+  fi
 }
 
 # ensure_uv
 #
-# Usage:
-#   ensure_uv
-#
-# Return 0 (true) if `uv` is available on PATH, installing it if it was not
-# already present.
-# Return a non-zero value (false) otherwise, after printing an actionable
-# error message to stderr.
-#
-# Sets the following environment variables:
-#
-# - PYENV_VERSION (only when pyenv is installed)
-# - PATH (~/.local/bin, the venv, and pip's `--user` script directory)
-# - UV_TOOL_DIR (only when $DRIVERS_TOOLS is set)
-# - UV_CACHE_DIR, UV_PYTHON_INSTALL_DIR (additionally require $CI to be set)
-#
-# Looks everywhere uv may already be, and only then hands off to
-# _ensure_uv_install, which documents why installing it takes two attempts.
-#
-# On success, also relocates uv's shared state; see _ensure_uv_scope_paths.
+# Find or install a working uv and put its directory on PATH, then configure it
+# (isolated cache and tool dirs), so a consumer has a uv available. Returns
+# non-zero and prints a debug log on failure. It is safe to call repeatedly.
 ensure_uv() {
-  # Some hosts (e.g. RHEL8 zseries/power8) have pyenv, whose shims intercept
-  # python/uv and enforce whichever .python-version they find walking up from the
-  # working directory, failing if pyenv lacks that exact version. Defer to pyenv's
-  # own global version rather than hardcoding e.g. "system", which may not be
-  # where uv is actually installed.
-  if command -v pyenv >/dev/null 2>&1; then
-    declare pyenv_global
-    pyenv_global="$(pyenv global 2>/dev/null | head -n1)" || true
-    [ -n "$pyenv_global" ] && export PYENV_VERSION="$pyenv_global"
+  _ensure_uv_defer_to_pyenv_global
+
+  # UV_VERSION is the uv version this repo wants, sourced from requirements-uv.txt
+  # (the same file install-cli pins from), so the uv ensure_uv installs is the one
+  # cached for install-cli to reuse. UV_VERSION overrides it when set.
+  if [ -z "${UV_VERSION:-}" ]; then
+    local ensure_uv_dir uv_spec
+    ensure_uv_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" 2>/dev/null || ensure_uv_dir=""
+    uv_spec="$(sed -n 's/^uv//p' "$ensure_uv_dir/../requirements-uv.txt" 2>/dev/null | head -n1)" || true
+    UV_VERSION="${uv_spec}"
   fi
+  export UV_VERSION
+
+  # UV_UNMANAGED_INSTALL keeps uv from trying to self-manage an install we
+  # placed ourselves.
+  export UV_UNMANAGED_INSTALL="${UV_UNMANAGED_INSTALL:-1}"
 
   # Stable rather than mktemp'd, so a later call in a fresh shell reuses the venv.
-  # Under CI, Evergreen points TMPDIR at a per-task directory, so it is recycled
-  # with the task and stays out of the uploaded failure artifacts.
   declare venv_dir="${TMPDIR:-/tmp}"
   venv_dir="${venv_dir%/}/drivers-tools-uv-venv"
 
-  declare py=""
-  if command -v python3 >/dev/null 2>&1; then
-    py=python3
-  else
-    # Some legacy hosts (e.g. RHEL7) have no python3 on PATH at all, only an
-    # ancient Python 2 `python` that uv does not support. Prefer the MongoDB
-    # toolchain's python3, which those hosts do have.
-    declare toolchain_py
-    toolchain_py="$(compgen -G '/opt/mongodbtoolchain/v*/bin/python3' | sort -V | tail -n1)" || true
-    if [ -n "$toolchain_py" ] && [ -x "$toolchain_py" ]; then
-      py="$toolchain_py"
-    elif command -v python >/dev/null 2>&1; then
-      py=python
-    fi
-  fi
-
-  # None of these is reliably on PATH in a fresh shell. ~/.local/bin is where uv's
-  # own installer puts it and is off the default PATH on some hosts (RHEL7 root
-  # shells), and the rest are where an earlier ensure_uv call put it. Scripts is the
-  # Windows spelling of bin.
-  [ -n "${HOME:-}" ] && _ensure_uv_add_path "$HOME/.local/bin"
-  _ensure_uv_add_path "$venv_dir/bin"
-  _ensure_uv_add_path "$venv_dir/Scripts"
-  [ -n "$py" ] && _ensure_uv_add_user_bin "$py"
-
-  if uv --version >/dev/null 2>&1; then
+  # A working uv already exists; point PATH at it.
+  if _ensure_uv_prepend_path "$venv_dir"; then
     _ensure_uv_scope_paths
     return 0
   fi
 
-  # Past this point uv is genuinely absent and has to be installed. Output is
-  # collected rather than printed, since each attempt is expected to fail on some
-  # hosts and only a total failure is worth reporting.
-  # Beside the venv, so there is nothing to clean up. Falls back to discarding the
-  # output if $TMPDIR is not writable, which is better than failing over a log.
+  # Otherwise pick an interpreter to install a working uv with:
+  # $DRIVERS_TOOLS_PYTHON, an active venv, the toolchain, then system python3.
+  # Skip one that is too old or cannot install uv (no pip and no venv), so it
+  # does not preempt a python3 that would work. Use absolute paths so a venv
+  # later on PATH cannot re-point the name.
+  declare py="" candidate resolved
+  for candidate in \
+    "${DRIVERS_TOOLS_PYTHON:-}" \
+    "${VIRTUAL_ENV:+$VIRTUAL_ENV/bin/python}" \
+    "${VIRTUAL_ENV:+$VIRTUAL_ENV/Scripts/python.exe}" \
+    $(_ensure_uv_toolchain_pythons) \
+    python3 \
+    python; do
+    [ -n "$candidate" ] || continue
+    resolved="$(command -v "$candidate" 2>/dev/null)" || continue
+    [ -n "$resolved" ] || continue
+    "$resolved" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)' >/dev/null 2>&1 || continue
+    "$resolved" -c 'import venv' >/dev/null 2>&1 || "$resolved" -m pip --version >/dev/null 2>&1 || continue
+    py="$resolved"
+    break
+  done
+
+  [ -n "$py" ] || {
+    echo "ERROR: no Python 3.8+ interpreter with pip or venv was found." >&2
+    return 1
+  }
+
+  # We collect logs so we can display just the tail later for debugging.
+  # The log is discarded if $TMPDIR is read-only.
   declare log="${venv_dir}-install.log"
   : >"$log" 2>/dev/null || log=/dev/null
 
-  [ -n "$py" ] && _ensure_uv_install "$py" "$venv_dir" "$log"
+  _ensure_uv_install "$py" "$venv_dir" "$log"
 
-  if uv --version >/dev/null 2>&1; then
+  if _ensure_uv_prepend_path "$venv_dir" "$py"; then
     _ensure_uv_scope_paths
     return 0
   fi
 
-  # Tail, because pip's connection retries can run to dozens of lines and the
-  # message that explains the failure is the last one.
   if [ "$log" != /dev/null ] && [ -s "$log" ]; then
     echo "Last output from the failed install attempts (full log: $log):" >&2
     tail -n 20 "$log" | sed 's/^/  /' >&2
     echo >&2
   fi
 
+  # Fall back to a helpful message for the user.
   cat <<'EOF' >&2
 ERROR: could not find or install `uv`.
 
