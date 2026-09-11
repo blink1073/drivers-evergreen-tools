@@ -186,16 +186,22 @@ ensure_uv() {
   declare venv_dir="${TMPDIR:-/tmp}"
   venv_dir="${venv_dir%/}/drivers-tools-uv-venv"
 
-  # Prefer the MongoDB toolchain's python3: the system one is 3.6 on
+  # Use the active venv's interpreter so uv installs into it; see the in-venv
+  # branch of _ensure_uv_install. Otherwise prefer the MongoDB toolchain's
+  # python3, which is modern, over the system one: it is 3.6 on
   # rhel82-arm64-small, and rhel7 has no python3 on PATH at all.
   declare py="" toolchain_py
-  toolchain_py="$(compgen -G '/opt/mongodbtoolchain/v*/bin/python3' | sort -V | tail -n1)" || true
-  if [ -n "$toolchain_py" ] && [ -x "$toolchain_py" ]; then
-    py="$toolchain_py"
-  elif command -v python3 >/dev/null 2>&1; then
-    py="$(command -v python3)"
-  elif command -v python >/dev/null 2>&1; then
-    py="$(command -v python)"
+  if [ -n "${VIRTUAL_ENV:-}" ] && [ -x "$VIRTUAL_ENV/bin/python" ]; then
+    py="$VIRTUAL_ENV/bin/python"
+  else
+    toolchain_py="$(compgen -G '/opt/mongodbtoolchain/v*/bin/python3' | sort -V | tail -n1)" || true
+    if [ -n "$toolchain_py" ] && [ -x "$toolchain_py" ]; then
+      py="$toolchain_py"
+    elif command -v python3 >/dev/null 2>&1; then
+      py="$(command -v python3)"
+    elif command -v python >/dev/null 2>&1; then
+      py="$(command -v python)"
+    fi
   fi
 
   # None of these is reliably on PATH in a fresh shell. ~/.local/bin is where uv's
