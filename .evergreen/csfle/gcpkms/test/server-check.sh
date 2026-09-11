@@ -26,10 +26,8 @@ if ! GCPKMS_CMD='[ ! -d ./drivers-evergreen-tools/.git ]' ./run-command.sh < /de
   exit 1
 fi
 
-# On the legacy variant, check the instance really has no pip; a base image that
-# started shipping pip would leave this passing while testing the ordinary path.
-# Carried by the exit status rather than the output, because run-command.sh
-# echoes the command and a sentinel string would match its own echo.
+# On the legacy variant, check the instance really has no pip; carried by the
+# exit status because run-command.sh echoes the command it runs.
 if [ "${kms_legacy_provisioning:-}" = "true" ]; then
   if ! GCPKMS_CMD='if python3 -m pip --version; then exit 17; fi' ./run-command.sh < /dev/null; then
     echo "ERROR: the instance has pip, so this run did not exercise the venv fallback." >&2
