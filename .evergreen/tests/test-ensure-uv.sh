@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Regression tests for two ensure_uv install shapes no VM image reproduces:
-# inside an active venv, and pip-without-venv. Runs in a private HOME/TMPDIR
-# and skips on hosts that cannot reproduce a shape.
+# Regression tests for two ensure_uv install shapes that no VM image reproduces:
+# inside an active venv, and pip-without-venv. Runs in a private HOME/TMPDIR and
+# skips on hosts that cannot reproduce a shape.
 set -eu -o pipefail
 
 SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
