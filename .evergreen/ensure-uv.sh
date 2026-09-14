@@ -179,6 +179,8 @@ _ensure_uv_install() {
     [ -n "$(_ensure_uv_locate "$venv_dir" "$py")" ] && return 0
   fi
 
+  # Keep the venv fallback: the legacy KMS scripts still use it, and it is the
+  # backstop for hosts or edge cases the pip route misses.
   # No pip at all, or the pip install ended without a usable uv (Debian refuses
   # ensurepip outside a venv). A venv is the fallback either way.
   echo "uv still not found; building a virtual environment at $venv_dir..." >&2
