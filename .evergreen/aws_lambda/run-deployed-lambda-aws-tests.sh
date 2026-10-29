@@ -44,6 +44,10 @@ for VARNAME in "${VARLIST[@]}"; do
 [[ -z "${!VARNAME:-}" ]] && echo "ERROR: $VARNAME not set" && exit 1;
 done
 
+# Tag the deployed stack and function per the MongoDB Cloud Tag Policy (DRIVERS-3712).
+MONGODB_OWNER_TAG="${MONGODB_OWNER_TAG:-client-libraries-managers@mongodb.com}"
+MONGODB_ENV_TAG="${MONGODB_ENV_TAG:-dev}"
+
 # Restarts the cluster's primary node.
 restart_cluster_primary ()
 {
@@ -63,6 +67,7 @@ deploy_lambda_function ()
     --stack-name "${CLUSTER_NAME}" \
     --capabilities CAPABILITY_IAM \
     --resolve-s3 \
+    --tags "mongodb-owner=${MONGODB_OWNER_TAG},mongodb-env=${MONGODB_ENV_TAG}" \
     --parameter-overrides "MongoDbUri=${MONGODB_URI}" \
     --region ${AWS_REGION}
 }
@@ -100,6 +105,14 @@ sam build ${SAM_BUILD_ARGS:-}
 deploy_lambda_function
 
 get_lambda_function_arn
+
+# Log the created resources' tags when requested (DRIVERS-3712 verification).
+if [ -n "${VERIFY_MONGODB_TAGS:-}" ]; then
+    echo "verify-tags: stack tags for ${CLUSTER_NAME}:"
+    aws cloudformation describe-stacks --stack-name "${CLUSTER_NAME}" --region ${AWS_REGION} --query "Stacks[0].Tags" -o json
+    echo "verify-tags: function tags for ${LAMBDA_FUNCTION_ARN}:"
+    aws lambda get-function --function-name "${LAMBDA_FUNCTION_ARN}" --region ${AWS_REGION} --query "Tags" -o json
+fi
 
 
 check_lambda_output () {
