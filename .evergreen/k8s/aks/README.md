@@ -10,6 +10,10 @@ These steps must be done by an account with admin access (one time):
 2. Store the secrets in the AWS vault
 3. Run `setup-cluster.sh`
 
+`setup-cluster.sh` tags all resources it creates with `mongodb-owner=client-libraries-managers@mongodb.com`
+and `mongodb-env=dev` per MongoDB's cloud resource tag policy. Override the tag values
+with `MONGODB_OWNER_TAG` and `MONGODB_ENV_TAG`.
+
 ## Usage
 
 These steps can be run using the drivers test secrets role:

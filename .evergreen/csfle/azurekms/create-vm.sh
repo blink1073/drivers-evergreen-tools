@@ -17,6 +17,11 @@ if [ -z "${AZUREKMS_VMNAME_PREFIX:-}" ] || \
 fi
 
 AZUREKMS_IDENTITY="${AZUREKMS_IDENTITY:-[system]}"
+
+# Tag the VM per the MongoDB Cloud Tag Policy (DRIVERS-3712).
+MONGODB_OWNER_TAG="${MONGODB_OWNER_TAG:-client-libraries-managers@mongodb.com}"
+MONGODB_ENV_TAG="${MONGODB_ENV_TAG:-dev}"
+
 AZUREKMS_VMNAME="vmname-$AZUREKMS_VMNAME_PREFIX-$RANDOM"
 echo "Creating a Virtual Machine ($AZUREKMS_VMNAME) ... begin"
 # az vm create also creates a "nic" and "public IP" by default.
@@ -39,6 +44,7 @@ az vm create \
     --nsg "$AZUREKMS_VMNAME-NSG" \
     --nsg-rule "NONE" \
     --assign-identity $AZUREKMS_IDENTITY \
+    --tags "mongodb-owner=$MONGODB_OWNER_TAG" "mongodb-env=$MONGODB_ENV_TAG" \
     >/dev/null
 
 # If applicable, set the machine size.

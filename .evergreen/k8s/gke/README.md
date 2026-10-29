@@ -11,6 +11,11 @@ These steps must be done by an admin (one time):
 2. Store the secrets in the AWS vault
 3. Run `setup-cluster.sh`
 
+`setup-cluster.sh` labels the created cluster with `mongodb-owner=client-libraries-managers`
+and `mongodb-env=dev` per MongoDB's cloud resource tag policy (GCP labels only allow
+lowercase values). Override the label values with `MONGODB_OWNER_TAG` and
+`MONGODB_ENV_TAG`.
+
 ## Usage
 
 These steps can be run using the drivers test secrets role:

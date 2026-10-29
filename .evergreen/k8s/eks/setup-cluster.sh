@@ -13,7 +13,12 @@ if [ -z "${EKS_CLUSTER_NAME:-}" ]; then
     . ./../../secrets_handling/setup-secrets.sh drivers/eks
 fi
 
-eksctl create cluster --name $EKS_CLUSTER_NAME --zones "${EKS_REGION}a,${EKS_REGION}b"
+# Tag the cluster per the MongoDB Cloud Tag Policy (DRIVERS-3712).
+MONGODB_OWNER_TAG="${MONGODB_OWNER_TAG:-client-libraries-managers@mongodb.com}"
+MONGODB_ENV_TAG="${MONGODB_ENV_TAG:-dev}"
+
+eksctl create cluster --name $EKS_CLUSTER_NAME --zones "${EKS_REGION}a,${EKS_REGION}b" \
+  --tags "mongodb-owner=${MONGODB_OWNER_TAG},mongodb-env=${MONGODB_ENV_TAG}"
 kubectl config set-context --current
 eksctl utils associate-iam-oidc-provider --cluster $EKS_CLUSTER_NAME --approve
 eksctl create iamserviceaccount \

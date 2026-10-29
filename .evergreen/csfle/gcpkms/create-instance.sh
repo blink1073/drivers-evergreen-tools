@@ -19,6 +19,11 @@ for VARNAME in "${VARLIST[@]}"; do
   [[ -z "${!VARNAME:-}" ]] && echo "ERROR: $VARNAME not set" && exit 1;
 done
 
+# Label the instance per the MongoDB Cloud Tag Policy (DRIVERS-3712).
+# GCP labels only allow lowercase values, so the owner default omits @mongodb.com.
+MONGODB_OWNER_TAG="${MONGODB_OWNER_TAG:-client-libraries-managers}"
+MONGODB_ENV_TAG="${MONGODB_ENV_TAG:-dev}"
+
 GCPKMS_INSTANCENAME="instancename-$RANDOM"
 
 SCRIPT_DIR=$(dirname ${BASH_SOURCE[0]})
@@ -40,5 +45,6 @@ $GCPKMS_GCLOUD compute instances create $GCPKMS_INSTANCENAME \
     --metadata-from-file=startup-script=$DRIVERS_TOOLS/.evergreen/csfle/gcpkms/remote-scripts/startup.sh \
     --scopes https://www.googleapis.com/auth/cloudkms,https://www.googleapis.com/auth/compute \
     --metadata enable-oslogin=TRUE \
+    --labels "mongodb-owner=$MONGODB_OWNER_TAG,mongodb-env=$MONGODB_ENV_TAG" \
     --boot-disk-size $GCPKMS_DISKSIZE
 echo "Creating GCE instance ($GCPKMS_INSTANCENAME) ... end"

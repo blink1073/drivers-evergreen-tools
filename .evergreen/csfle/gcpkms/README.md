@@ -12,6 +12,11 @@ The included mock_server may be useful for local development. It simulates a [Me
 
 If you need a larger GCP [VM](https://cloud.google.com/compute/docs/machine-resource), set `GCPKMS_MACHINETYPE`.
 
+Per MongoDB's cloud resource tag policy, the created instance is labelled with
+`mongodb-owner=client-libraries-managers` and `mongodb-env=dev` (GCP labels only allow
+lowercase values). Override the label values with `MONGODB_OWNER_TAG` and
+`MONGODB_ENV_TAG`.
+
 # Usage with AWS Vault
 
 See [Secrets Handling](../../secrets_handling/README.md) for details on how to access the secrets
