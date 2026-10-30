@@ -203,12 +203,28 @@ def remote_create_container(
     """
     ecs_client = boto3.client("ecs", region_name=_get_region(cluster))
 
+    # Tag the created service per the MongoDB Cloud Tag Policy (DRIVERS-3712).
+    # ECS tag dicts use lowercase key/value names.
+    tags = [
+        {
+            "key": "mongodb-owner",
+            "value": os.environ.get(
+                "MONGODB_OWNER_TAG", "client-libraries-managers@mongodb.com"
+            ),
+        },
+        {
+            "key": "mongodb-env",
+            "value": os.environ.get("MONGODB_ENV_TAG", "dev"),
+        },
+    ]
+
     resp = ecs_client.create_service(
         cluster=cluster,
         serviceName=service_name,
         taskDefinition=task_definition,
         desiredCount=1,
         launchType="FARGATE",
+        tags=tags,
         networkConfiguration={
             "awsvpcConfiguration": {
                 "subnets": subnets,
