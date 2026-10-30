@@ -111,7 +111,7 @@ EOF
     verify_atlas_tags "Atlas deployment ${DEPLOYMENT_NAME}" \
       "$(curl -sS \
         --digest -u "${ATLAS_PUBLIC_API_KEY}:${ATLAS_PRIVATE_API_KEY}" \
-        "${ATLAS_BASE_URL}/groups/${ATLAS_GROUP_ID}/clusters/${DEPLOYMENT_NAME}" | jq -c '.tags')"
+        "${ATLAS_BASE_URL}/groups/${ATLAS_GROUP_ID}/clusters/${DEPLOYMENT_NAME}")" "tags"
   fi
 fi
 

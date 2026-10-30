@@ -47,6 +47,18 @@ az vm create \
     --tags "mongodb-owner=$MONGODB_OWNER_TAG" "mongodb-env=$MONGODB_ENV_TAG" \
     >/dev/null
 
+# az vm create --tags only reaches the VM itself. Tag the implicitly created
+# OS managed disk too; managed disks are in scope for the MongoDB Cloud Tag
+# Policy (DRIVERS-3712).
+OS_DISK_ID=$(az vm show \
+    --resource-group "$AZUREKMS_RESOURCEGROUP" \
+    --name "$AZUREKMS_VMNAME" \
+    --query "storageProfile.osDisk.managedDisk.id" \
+    --output tsv)
+az tag create --resource-id "$OS_DISK_ID" \
+    --tags "mongodb-owner=$MONGODB_OWNER_TAG" "mongodb-env=$MONGODB_ENV_TAG" \
+    >/dev/null
+
 # If applicable, set the machine size.
 if [ -n "${AZUREKMS_MACHINESIZE:-}" ]; then
     az vm resize -g "$AZUREKMS_RESOURCEGROUP" -n "$AZUREKMS_VMNAME" --size "$AZUREKMS_MACHINESIZE"
@@ -78,4 +90,6 @@ if [ -n "${VERIFY_MONGODB_TAGS:-}" ]; then
   . "$DRIVERS_TOOLS"/.evergreen/verify-tags.sh
   verify_cloud_tags "Azure VM ${AZUREKMS_VMNAME}" \
     "$(az vm show --resource-group "${AZUREKMS_RESOURCEGROUP}" --name "${AZUREKMS_VMNAME}" --query tags --output json)"
+  verify_cloud_tags "Azure VM ${AZUREKMS_VMNAME} OS disk" \
+    "$(az disk show --ids "${OS_DISK_ID}" --query tags --output json)"
 fi

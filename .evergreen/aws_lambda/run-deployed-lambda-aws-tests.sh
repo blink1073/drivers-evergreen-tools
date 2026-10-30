@@ -106,22 +106,30 @@ deploy_lambda_function
 
 get_lambda_function_arn
 
-# Log the created resources' tags when requested (DRIVERS-3712 verification).
+# Verify the created resources' tags when requested (DRIVERS-3712 verification).
 if [ -n "${VERIFY_MONGODB_TAGS:-}" ]; then
-    echo "verify-tags: stack tags for ${CLUSTER_NAME}:"
-    aws cloudformation describe-stacks --stack-name "${CLUSTER_NAME}" --region ${AWS_REGION} --query "Stacks[0].Tags" --output json
-    echo "verify-tags: function tags for ${LAMBDA_FUNCTION_ARN}:"
-    aws lambda get-function --function-name "${LAMBDA_FUNCTION_ARN}" --region ${AWS_REGION} --query "Tags" --output json
-    echo "verify-tags: Atlas cluster tags for ${CLUSTER_NAME}:"
-    ATLAS_TAGS=$(curl -sS \
+    . "$DRIVERS_TOOLS"/.evergreen/verify-tags.sh
+
+    # CloudFormation returns an array of {"Key", "Value"} objects; convert it
+    # to a tags map for the helper. jq is already required by get_lambda_function_arn.
+    STACK_TAGS=$(aws cloudformation describe-stacks \
+      --stack-name "${CLUSTER_NAME}" \
+      --region "${AWS_REGION}" \
+      --query "Stacks[0].Tags" \
+      --output json | jq 'map({(.Key): .Value}) | add')
+    verify_cloud_tags "CloudFormation stack ${CLUSTER_NAME}" "${STACK_TAGS}"
+
+    FUNCTION_TAGS=$(aws lambda get-function \
+      --function-name "${LAMBDA_FUNCTION_ARN}" \
+      --region "${AWS_REGION}" \
+      --query "Tags" \
+      --output json)
+    verify_cloud_tags "Lambda function ${LAMBDA_FUNCTION_ARN}" "${FUNCTION_TAGS}"
+
+    ATLAS_RESPONSE=$(curl -sS \
       --digest -u "${DRIVERS_ATLAS_PUBLIC_API_KEY}:${DRIVERS_ATLAS_PRIVATE_API_KEY}" \
-      "${ATLAS_BASE_URL}/groups/${DRIVERS_ATLAS_GROUP_ID}/clusters/${CLUSTER_NAME}" | jq -c '.tags')
-    echo "${ATLAS_TAGS}"
-    if ! echo "${ATLAS_TAGS}" | jq -e 'any(.[]; .key == "mongodb-owner" and .value != "") and any(.[]; .key == "mongodb-env" and .value != "")' > /dev/null; then
-        echo "verify-tags FAILED: Atlas cluster ${CLUSTER_NAME} lacks mongodb-owner/mongodb-env tags"
-        exit 1
-    fi
-    echo "verify-tags OK: mongodb-owner/mongodb-env present on stack, function, and Atlas cluster"
+      "${ATLAS_BASE_URL}/groups/${DRIVERS_ATLAS_GROUP_ID}/clusters/${CLUSTER_NAME}")
+    verify_atlas_tags "Atlas cluster ${CLUSTER_NAME}" "${ATLAS_RESPONSE}" "tags"
 fi
 
 
