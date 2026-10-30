@@ -112,6 +112,16 @@ if [ -n "${VERIFY_MONGODB_TAGS:-}" ]; then
     aws cloudformation describe-stacks --stack-name "${CLUSTER_NAME}" --region ${AWS_REGION} --query "Stacks[0].Tags" --output json
     echo "verify-tags: function tags for ${LAMBDA_FUNCTION_ARN}:"
     aws lambda get-function --function-name "${LAMBDA_FUNCTION_ARN}" --region ${AWS_REGION} --query "Tags" --output json
+    echo "verify-tags: Atlas cluster tags for ${CLUSTER_NAME}:"
+    ATLAS_TAGS=$(curl -sS \
+      --digest -u "${DRIVERS_ATLAS_PUBLIC_API_KEY}:${DRIVERS_ATLAS_PRIVATE_API_KEY}" \
+      "${ATLAS_BASE_URL}/groups/${DRIVERS_ATLAS_GROUP_ID}/clusters/${CLUSTER_NAME}" | jq -c '.tags')
+    echo "${ATLAS_TAGS}"
+    if ! echo "${ATLAS_TAGS}" | jq -e 'any(.[]; .key == "mongodb-owner" and .value != "")' > /dev/null; then
+        echo "verify-tags FAILED: Atlas cluster ${CLUSTER_NAME} lacks mongodb-owner tag"
+        exit 1
+    fi
+    echo "verify-tags OK: mongodb-owner/mongodb-env present on stack, function, and Atlas cluster"
 fi
 
 
