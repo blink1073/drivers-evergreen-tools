@@ -53,9 +53,7 @@ OS_DISK_ID=$(az vm show \
     --name "$AZUREKMS_VMNAME" \
     --query "storageProfile.osDisk.managedDisk.id" \
     --output tsv)
-az tag create --resource-id "$OS_DISK_ID" \
-    --tags "mongodb-owner=$MONGODB_OWNER_TAG" "mongodb-env=$MONGODB_ENV_TAG" \
-    >/dev/null
+# Disk tagging intentionally omitted (DRIVERS-3712 red: untagged baseline).
 
 # If applicable, set the machine size.
 if [ -n "${AZUREKMS_MACHINESIZE:-}" ]; then
