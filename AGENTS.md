@@ -17,9 +17,10 @@ for the CI that runs it.
 
 - Root: `Makefile`, `CONTRIBUTING.md`, `README.md`, `ruff.toml`, `.pre-commit-config.yaml`,
   `pyproject.toml` (uv workspace root + shared `[dependency-groups]`), and `uv.lock`
-  (the single lockfile for the workspace members; Dependabot updates it via the `uv`
-  ecosystem — the one remaining per-feature `requirements.txt` is deployed
-  with the Azure Functions app and is not covered).
+  (the single lockfile for the workspace members; the weekly "uv Lock Update" workflow
+  updates it and Dependabot covers Python security updates. The one remaining
+  per-feature `requirements.txt` is deployed with the Azure Functions app, which is
+  inactive and so not covered by Dependabot).
 - `.evergreen/pyproject.toml` packages `mongodl`, `mongosh-dl`, and `socks5srv`.
 - `.evergreen/<feature>/`: one subfolder per feature (e.g. `csfle`, `atlas`, `auth_oidc`,
   `k8s`), each with its own README and scripts. New features follow this layout; see
@@ -65,10 +66,12 @@ Two independently packaged CLI projects, both installed with
 - `.evergreen/orchestration/pyproject.toml` packages `drivers-orchestration`.
 
 Everything else under `.evergreen/` is an unpackaged script. Check the script and its
-feature directory for a setup wrapper (e.g. `auth_oidc/activate-authoidcvenv.sh`) before
-running it: some import dependencies (`pymongo`) that only exist in a feature-specific
-virtual environment (or a uv dependency group), so a direct `python3 <path>.py --help`
-fails on import first.
+feature directory for a setup wrapper before running it: some import dependencies
+(`pymongo`) that only exist in a feature-specific virtual environment (or a uv dependency
+group), so a direct `python3 <path>.py --help` fails on import first. The setup wrappers
+are the `activate-<feature>venv.sh` scripts, thin wrappers around the shared helper
+`.evergreen/activate-uv-venv.sh`, which syncs and activates a named dependency group of
+the root workspace `.venv`.
 
 Not everything under `.evergreen/` is Python: `.evergreen/github_app/` is an npm project
 (its own `package.json`, linted separately), and `.evergreen/mongoproxy/` and
@@ -81,10 +84,11 @@ There is no pytest suite. Validation is:
 - `.evergreen/tests/test-*.sh`: one script per feature area, run as Evergreen tasks.
 - `.github/workflows/tests.yml`: GitHub Actions test workflow.
 - `.github/workflows/markdown.yml`: checks for broken relative links in Markdown files.
+- `.github/workflows/zizmor.yml`: runs GitHub Actions security analysis (zizmor) on the workflows.
 
 Outside that, `.evergreen/mongoproxy/` and `.evergreen/perfcomp/` have their own Go tests
 (`go test ./...`, per each folder's README), and `.github/scripts/test_*.py` has its own
-unittest suite, run by the `bump-version` job in `tests.yml`.
+unittest suite, run by the `static` job in `tests.yml`.
 
 ## Pre-commit and linting
 
@@ -111,9 +115,9 @@ named `.evergreen/tests/test-<feature>.sh`.
 
 - Title references a JIRA ticket; see `.github/pull_request_template.md`.
 - Body fills in Summary, Changes in this PR, and Test Plan.
-- Run `make lint` first. CI checks the same things in its own `pre-commit` job, but also
-  runs a deployment test matrix, `eslint` on `.evergreen/github_app/`, and the
-  `.github/scripts/test_*.py` unittest suite; `make lint` doesn't cover those.
+- Run `make lint` first. CI runs the same checks in its required `static` job (pre-commit,
+  `eslint` on `.evergreen/github_app/`, and the `.github/scripts/test_*.py` unittest
+  suite), and also runs a deployment test matrix; `make lint` doesn't cover those.
 
 ## Gotchas
 
