@@ -38,5 +38,5 @@ gcloud projects add-iam-policy-binding ${PROJECT_NUMBER} \
 if [ -n "${VERIFY_MONGODB_TAGS:-}" ]; then
   . "$DRIVERS_TOOLS"/.evergreen/verify-tags.sh
   verify_cloud_tags "GKE cluster ${GKE_CLUSTER_NAME}" \
-    "$(gcloud container clusters describe "${GKE_CLUSTER_NAME}" --region "${GKE_REGION}" --project "${GKE_PROJECT}" --format "json(resourceLabels)" | jq -c ".resourceLabels")"
+    "$(gcloud container clusters describe "${GKE_CLUSTER_NAME}" --region "${GKE_REGION}" --project "${GKE_PROJECT}" --format "json(resourceLabels)")" "resourceLabels"
 fi

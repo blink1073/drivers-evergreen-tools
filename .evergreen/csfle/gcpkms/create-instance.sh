@@ -55,5 +55,5 @@ if [ -n "${VERIFY_MONGODB_TAGS:-}" ]; then
   verify_cloud_tags "GCE instance ${GCPKMS_INSTANCENAME}" \
     "$($GCPKMS_GCLOUD compute instances describe "${GCPKMS_INSTANCENAME}" \
       --zone "${GCPKMS_ZONE}" --project "${GCPKMS_PROJECT}" \
-      --format "json(labels)" | jq -c ".labels")"
+      --format "json(labels)")" "labels"
 fi
