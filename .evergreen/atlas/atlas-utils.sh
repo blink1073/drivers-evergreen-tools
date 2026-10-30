@@ -29,8 +29,11 @@ create_deployment ()
   TYPE=${DEPLOYMENT_TYPE:-"clusters"}
 
   # Tag the deployment per the MongoDB Cloud Tag Policy (DRIVERS-3712).
-  MONGODB_OWNER_TAG="${MONGODB_OWNER_TAG:-client-libraries-managers@mongodb.com}"
-  MONGODB_ENV_TAG="${MONGODB_ENV_TAG:-dev}"
+  # Declare these local: handle-paths.sh leaves `allexport` on in callers, so
+  # plain assignments here would leak the value (which contains "@" and ".")
+  # into child processes, where GCP label creation rejects it as invalid.
+  local MONGODB_OWNER_TAG="${MONGODB_OWNER_TAG:-client-libraries-managers@mongodb.com}"
+  local MONGODB_ENV_TAG="${MONGODB_ENV_TAG:-dev}"
   ensure_uv || exit 1
   DEPLOYMENT_DATA=$(uv run --no-project python -c '
 import json, sys
