@@ -28,22 +28,9 @@ create_deployment ()
   ATLAS_BASE_URL=${ATLAS_BASE_URL:-"https://account-dev.mongodb.com/api/atlas/v1.0"}
   TYPE=${DEPLOYMENT_TYPE:-"clusters"}
 
-  # Tag the deployment per the MongoDB Cloud Tag Policy (DRIVERS-3712).
-  # Declare these local: handle-paths.sh leaves `allexport` on in callers, so
-  # plain assignments here would leak the value (which contains "@" and ".")
-  # into child processes, where GCP label creation rejects it as invalid.
-  local MONGODB_OWNER_TAG="${MONGODB_OWNER_TAG:-client-libraries-managers@mongodb.com}"
-  local MONGODB_ENV_TAG="${MONGODB_ENV_TAG:-dev}"
+  # Tagging intentionally omitted (DRIVERS-3712 red: untagged baseline).
+  # The verify_atlas_tags calls in the callers are expected to FAIL.
   ensure_uv || exit 1
-  DEPLOYMENT_DATA=$(uv run --no-project python -c '
-import json, sys
-data = json.loads(sys.argv[1])
-data["tags"] = [
-    {"key": "mongodb-owner", "value": sys.argv[2]},
-    {"key": "mongodb-env", "value": sys.argv[3]},
-]
-print(json.dumps(data))
-' "$DEPLOYMENT_DATA" "$MONGODB_OWNER_TAG" "$MONGODB_ENV_TAG")
 
   echo "Creating new Atlas Deployment in Group $ATLAS_GROUP_ID..." 1>&2
   echo "Using Atlas base url: $ATLAS_BASE_URL" 1>&2

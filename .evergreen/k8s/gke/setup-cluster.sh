@@ -16,18 +16,15 @@ fi
 . $DRIVERS_TOOLS/.evergreen/ensure-binary.sh gcloud
 gcloud auth login
 
-# Label all created resources per the MongoDB Cloud Tag Policy (DRIVERS-3712).
-# GCP labels only allow lowercase values, so the owner default omits @mongodb.com.
-MONGODB_OWNER_TAG="${MONGODB_OWNER_TAG:-client-libraries-managers}"
-MONGODB_ENV_TAG="${MONGODB_ENV_TAG:-dev}"
+# Tagging intentionally omitted (DRIVERS-3712 red: untagged baseline).
+# The verify block below is expected to FAIL with "lacks mongodb-owner/mongodb-env".
 
 gcloud beta container --project "$GKE_PROJECT" clusters create-auto "$GKE_CLUSTER_NAME" \
   --region "$GKE_REGION" --release-channel "regular" \
   --network "projects/$GKE_PROJECT/global/networks/default" \
   --subnetwork "projects/$GKE_PROJECT/regions/$GKE_REGION/subnetworks/default" \
   --binauthz-evaluation-mode=DISABLED \
-  --service-account=$GKE_SERVICE_ACCOUNT --fleet-project=$GKE_PROJECT \
-  --labels "mongodb-owner=${MONGODB_OWNER_TAG},mongodb-env=${MONGODB_ENV_TAG}"
+  --service-account=$GKE_SERVICE_ACCOUNT --fleet-project=$GKE_PROJECT
 
 PROJECT_NUMBER="$(gcloud projects describe ${GKE_PROJECT} --format='get(projectNumber)')"
 gcloud projects add-iam-policy-binding ${PROJECT_NUMBER} \
