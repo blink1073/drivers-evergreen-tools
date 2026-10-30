@@ -173,8 +173,10 @@ def setup_ecs():
 
     # Pass in the AWS credentials as environment variables
     # AWS_SHARED_CREDENTIALS_FILE does not work in evergreen for an unknown
-    #  reason
-    env = dict(
+    #  reason. Inherit the parent environment so flags like VERIFY_MONGODB_TAGS
+    #  reach lib/container_tester.py, and override the AWS credentials.
+    env = os.environ.copy()
+    env.update(
         AWS_ACCESS_KEY_ID=CONFIG[get_key("iam_auth_ecs_account")],
         AWS_SECRET_ACCESS_KEY=CONFIG[get_key("iam_auth_ecs_secret_access_key")],
     )
