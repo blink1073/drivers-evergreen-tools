@@ -245,6 +245,21 @@ def remote_create_container(
 
     waiter.wait(cluster=cluster, services=[service_arn])
 
+    # Verify the service's tags when requested (DRIVERS-3712), mirroring the
+    # VERIFY_MONGODB_TAGS gates in the shell setup scripts.
+    if os.environ.get("VERIFY_MONGODB_TAGS"):
+        service = ecs_client.describe_services(
+            cluster=cluster, services=[service_arn], include=["TAGS"]
+        )["services"][0]
+        actual = {t["key"]: t.get("value") for t in service.get("tags", [])}
+        print(f"verify-tags: ECS service {service_name} tags: {actual}")
+        if not actual.get("mongodb-owner") or not actual.get("mongodb-env"):
+            raise SystemExit(
+                f"verify-tags FAILED: ECS service {service_name} lacks "
+                "mongodb-owner/mongodb-env tags"
+            )
+        print("verify-tags OK: mongodb-owner/mongodb-env present on ECS service")
+
 
 def _remote_stop_container_args(args):
     remote_stop_container(args.cluster, args.service)
