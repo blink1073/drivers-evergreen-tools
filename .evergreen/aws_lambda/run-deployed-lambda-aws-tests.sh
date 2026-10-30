@@ -67,7 +67,7 @@ deploy_lambda_function ()
     --stack-name "${CLUSTER_NAME}" \
     --capabilities CAPABILITY_IAM \
     --resolve-s3 \
-    --tags "mongodb-owner=${MONGODB_OWNER_TAG},mongodb-env=${MONGODB_ENV_TAG}" \
+    --tags "mongodb-owner=${MONGODB_OWNER_TAG}" "mongodb-env=${MONGODB_ENV_TAG}" \
     --parameter-overrides "MongoDbUri=${MONGODB_URI}" \
     --region ${AWS_REGION}
 }
