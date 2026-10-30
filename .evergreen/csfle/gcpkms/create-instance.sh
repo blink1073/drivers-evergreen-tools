@@ -48,3 +48,12 @@ $GCPKMS_GCLOUD compute instances create $GCPKMS_INSTANCENAME \
     --labels "mongodb-owner=$MONGODB_OWNER_TAG,mongodb-env=$MONGODB_ENV_TAG" \
     --boot-disk-size $GCPKMS_DISKSIZE
 echo "Creating GCE instance ($GCPKMS_INSTANCENAME) ... end"
+
+# Verify the instance's labels when requested (DRIVERS-3712).
+if [ -n "${VERIFY_MONGODB_TAGS:-}" ]; then
+  . "$DRIVERS_TOOLS"/.evergreen/verify-tags.sh
+  verify_cloud_tags "GCE instance ${GCPKMS_INSTANCENAME}" \
+    "$($GCPKMS_GCLOUD compute instances describe "${GCPKMS_INSTANCENAME}" \
+      --zone "${GCPKMS_ZONE}" --project "${GCPKMS_PROJECT}" \
+      --format "json(labels)" | jq -c ".labels")"
+fi

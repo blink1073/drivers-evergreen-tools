@@ -72,3 +72,10 @@ az network nsg rule create \
     --source-address-prefixes "$EXTERNAL_IP"
 
 echo "Creating a Virtual Machine ($AZUREKMS_VMNAME) ... end"
+
+# Verify the VM's tags when requested (DRIVERS-3712).
+if [ -n "${VERIFY_MONGODB_TAGS:-}" ]; then
+  . "$DRIVERS_TOOLS"/.evergreen/verify-tags.sh
+  verify_cloud_tags "Azure VM ${AZUREKMS_VMNAME}" \
+    "$(az vm show --resource-group "${AZUREKMS_RESOURCEGROUP}" --name "${AZUREKMS_VMNAME}" --query tags --output json)"
+fi

@@ -15,7 +15,8 @@ If you need a larger GCP [VM](https://cloud.google.com/compute/docs/machine-reso
 Per MongoDB's cloud resource tag policy, the created instance is labelled with
 `mongodb-owner=client-libraries-managers` and `mongodb-env=dev` (GCP labels only allow
 lowercase values). Override the label values with `MONGODB_OWNER_TAG` and
-`MONGODB_ENV_TAG`.
+`MONGODB_ENV_TAG`. Set `VERIFY_MONGODB_TAGS=1` to have the script verify the labels
+after creation and fail if they are missing.
 
 # Usage with AWS Vault
 

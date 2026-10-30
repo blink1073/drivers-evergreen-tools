@@ -60,3 +60,14 @@ az identity federated-credential create --name ${AKS_FEDERATED_IDENTITY_CREDENTI
 RESOURCE_SUBSCRIPTION=$(az group show --resource-group $AKS_RESOURCE_GROUP -o tsv --query id)
 export RESOURCE_SUBSCRIPTION
 az role assignment create --role "Azure Kubernetes Service RBAC Admin" --assignee $AKS_APPLICATION_ID  --scope $RESOURCE_SUBSCRIPTION
+
+# Verify the created resources' tags when requested (DRIVERS-3712).
+if [ -n "${VERIFY_MONGODB_TAGS:-}" ]; then
+  . "$DRIVERS_TOOLS"/.evergreen/verify-tags.sh
+  verify_cloud_tags "AKS resource group ${AKS_RESOURCE_GROUP}" \
+    "$(az group show --name "${AKS_RESOURCE_GROUP}" --query tags --output json)"
+  verify_cloud_tags "AKS cluster ${AKS_CLUSTER_NAME}" \
+    "$(az aks show --name "${AKS_CLUSTER_NAME}" --resource-group "${AKS_RESOURCE_GROUP}" --query tags --output json)"
+  verify_cloud_tags "AKS identity ${AKS_USER_ASSIGNED_IDENTITY_NAME}" \
+    "$(az identity show --name "${AKS_USER_ASSIGNED_IDENTITY_NAME}" --resource-group "${AKS_RESOURCE_GROUP}" --query tags --output json)"
+fi

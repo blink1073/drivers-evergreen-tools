@@ -27,7 +27,9 @@ If you need a larger Azure VM, set `AZUREKMS_MACHINESIZE` to a larger [size](htt
 
 Per MongoDB's cloud resource tag policy, the created VM is tagged with
 `mongodb-owner=client-libraries-managers@mongodb.com` and `mongodb-env=dev`. Override
-the tag values with `MONGODB_OWNER_TAG` and `MONGODB_ENV_TAG`.
+the tag values with `MONGODB_OWNER_TAG` and `MONGODB_ENV_TAG`. Set
+`VERIFY_MONGODB_TAGS=1` to have the script verify the tags after creation and fail if
+they are missing.
 
 # Usage with AWS Vault
 

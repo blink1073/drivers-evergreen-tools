@@ -12,7 +12,8 @@ These steps must be done by an account with admin access (one time):
 
 `setup-cluster.sh` tags all resources it creates with `mongodb-owner=client-libraries-managers@mongodb.com`
 and `mongodb-env=dev` per MongoDB's cloud resource tag policy. Override the tag values
-with `MONGODB_OWNER_TAG` and `MONGODB_ENV_TAG`.
+with `MONGODB_OWNER_TAG` and `MONGODB_ENV_TAG`. Set `VERIFY_MONGODB_TAGS=1` to have the
+script verify the tags after creation and fail if they are missing.
 
 ## Usage
 

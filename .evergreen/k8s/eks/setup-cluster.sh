@@ -28,3 +28,10 @@ eksctl create iamserviceaccount \
     --attach-policy-arn $EKS_POLICY_ARN \
     --approve \
     --override-existing-serviceaccounts
+
+# Verify the cluster's tags when requested (DRIVERS-3712).
+if [ -n "${VERIFY_MONGODB_TAGS:-}" ]; then
+  . "$DRIVERS_TOOLS"/.evergreen/verify-tags.sh
+  verify_cloud_tags "EKS cluster ${EKS_CLUSTER_NAME}" \
+    "$(aws eks describe-cluster --name "${EKS_CLUSTER_NAME}" --region "${EKS_REGION}" --query "cluster.tags" --output json)"
+fi

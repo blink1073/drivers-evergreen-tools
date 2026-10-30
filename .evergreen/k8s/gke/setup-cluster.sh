@@ -33,3 +33,10 @@ PROJECT_NUMBER="$(gcloud projects describe ${GKE_PROJECT} --format='get(projectN
 gcloud projects add-iam-policy-binding ${PROJECT_NUMBER} \
     --member=serviceAccount:$GKE_SERVICE_ACCOUNT \
     --role=roles/container.developer
+
+# Verify the cluster's labels when requested (DRIVERS-3712).
+if [ -n "${VERIFY_MONGODB_TAGS:-}" ]; then
+  . "$DRIVERS_TOOLS"/.evergreen/verify-tags.sh
+  verify_cloud_tags "GKE cluster ${GKE_CLUSTER_NAME}" \
+    "$(gcloud container clusters describe "${GKE_CLUSTER_NAME}" --region "${GKE_REGION}" --project "${GKE_PROJECT}" --format "json(resourceLabels)" | jq -c ".resourceLabels")"
+fi
