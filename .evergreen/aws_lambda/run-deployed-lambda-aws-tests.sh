@@ -109,9 +109,9 @@ get_lambda_function_arn
 # Log the created resources' tags when requested (DRIVERS-3712 verification).
 if [ -n "${VERIFY_MONGODB_TAGS:-}" ]; then
     echo "verify-tags: stack tags for ${CLUSTER_NAME}:"
-    aws cloudformation describe-stacks --stack-name "${CLUSTER_NAME}" --region ${AWS_REGION} --query "Stacks[0].Tags" -o json
+    aws cloudformation describe-stacks --stack-name "${CLUSTER_NAME}" --region ${AWS_REGION} --query "Stacks[0].Tags" --output json
     echo "verify-tags: function tags for ${LAMBDA_FUNCTION_ARN}:"
-    aws lambda get-function --function-name "${LAMBDA_FUNCTION_ARN}" --region ${AWS_REGION} --query "Tags" -o json
+    aws lambda get-function --function-name "${LAMBDA_FUNCTION_ARN}" --region ${AWS_REGION} --query "Tags" --output json
 fi
 
 
