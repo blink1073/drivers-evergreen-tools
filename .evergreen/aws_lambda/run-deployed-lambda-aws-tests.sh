@@ -15,6 +15,9 @@ set -o errexit  # Exit the script with error if any of the commands fail
 # Explanation of optional environment variables:
 #
 # SAM_BUILD_ARGS: Additional arguments to pass to the "sam build" command.
+# ARTIFACT_BUCKET: Overrides the name of the S3 bucket that receives the
+#   Lambda deployment artifacts. Defaults to a dedicated, tagged bucket
+#   named "dbx-lambda-artifacts-<account>-<region>" (DRIVERS-3712).
 
 VARLIST=(
 TEST_LAMBDA_DIRECTORY
@@ -48,6 +51,29 @@ done
 MONGODB_OWNER_TAG="${MONGODB_OWNER_TAG:-client-libraries-managers@mongodb.com}"
 MONGODB_ENV_TAG="${MONGODB_ENV_TAG:-dev}"
 
+# Ensure the dedicated artifact bucket exists and is tagged (DRIVERS-3712).
+# "sam deploy --resolve-s3" would create SAM's untagged managed bucket, which
+# is out of policy. S3 has no tags-on-create API; create then immediately
+# apply bucket tags, mirroring the azurekms OS-disk approach. The bucket
+# persists across runs; put-bucket-tagging is idempotent and the bucket is
+# dedicated, so replacing the tag set is safe.
+ensure_artifact_bucket ()
+{
+  ARTIFACT_BUCKET="${ARTIFACT_BUCKET:-dbx-lambda-artifacts-$(aws sts get-caller-identity \
+    --query Account --output text)-${AWS_REGION}}"
+  echo "Ensuring artifact bucket ${ARTIFACT_BUCKET}..."
+  if ! aws s3api head-bucket --bucket "${ARTIFACT_BUCKET}" 2>/dev/null; then
+    if [ "${AWS_REGION}" = "us-east-1" ]; then
+      aws s3api create-bucket --bucket "${ARTIFACT_BUCKET}"
+    else
+      aws s3api create-bucket --bucket "${ARTIFACT_BUCKET}" \
+        --create-bucket-configuration LocationConstraint="${AWS_REGION}"
+    fi
+  fi
+  aws s3api put-bucket-tagging --bucket "${ARTIFACT_BUCKET}" \
+    --tagging "TagSet=[{Key=mongodb-owner,Value=${MONGODB_OWNER_TAG}},{Key=mongodb-env,Value=${MONGODB_ENV_TAG}}]"
+}
+
 # Restarts the cluster's primary node.
 restart_cluster_primary ()
 {
@@ -61,12 +87,13 @@ restart_cluster_primary ()
 # Deploys a lambda function to the set stack name.
 deploy_lambda_function ()
 {
+  ensure_artifact_bucket
   echo "Deploying Lambda function..."
   sam deploy \
     --no-confirm-changeset \
     --stack-name "${CLUSTER_NAME}" \
     --capabilities CAPABILITY_IAM \
-    --resolve-s3 \
+    --s3-bucket "${ARTIFACT_BUCKET}" \
     --tags "mongodb-owner=${MONGODB_OWNER_TAG}" "mongodb-env=${MONGODB_ENV_TAG}" \
     --parameter-overrides "MongoDbUri=${MONGODB_URI}" \
     --region ${AWS_REGION}
@@ -130,6 +157,13 @@ if [ -n "${VERIFY_MONGODB_TAGS:-}" ]; then
       --digest -u "${DRIVERS_ATLAS_PUBLIC_API_KEY}:${DRIVERS_ATLAS_PRIVATE_API_KEY}" \
       "${ATLAS_BASE_URL}/groups/${DRIVERS_ATLAS_GROUP_ID}/clusters/${CLUSTER_NAME}")
     verify_atlas_tags "Atlas cluster ${CLUSTER_NAME}" "${ATLAS_RESPONSE}" "tags"
+
+    # Fails closed: get-bucket-tagging errors out on an untagged bucket.
+    BUCKET_TAGS=$(aws s3api get-bucket-tagging \
+      --bucket "${ARTIFACT_BUCKET}" \
+      --query "TagSet" \
+      --output json | jq 'map({(.Key): .Value}) | add')
+    verify_cloud_tags "SAM artifact bucket ${ARTIFACT_BUCKET}" "${BUCKET_TAGS}"
 fi
 
 
