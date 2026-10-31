@@ -87,13 +87,13 @@ restart_cluster_primary ()
 # Deploys a lambda function to the set stack name.
 deploy_lambda_function ()
 {
-  ensure_artifact_bucket
+  # Bucket ensure intentionally omitted (DRIVERS-3712 red: untagged baseline).
   echo "Deploying Lambda function..."
   sam deploy \
     --no-confirm-changeset \
     --stack-name "${CLUSTER_NAME}" \
     --capabilities CAPABILITY_IAM \
-    --s3-bucket "${ARTIFACT_BUCKET}" \
+    --resolve-s3 \
     --parameter-overrides "MongoDbUri=${MONGODB_URI}" \
     --region ${AWS_REGION}
 }
