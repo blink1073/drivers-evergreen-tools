@@ -13,15 +13,13 @@ if [ -z "${EKS_CLUSTER_NAME:-}" ]; then
     . ./../../secrets_handling/setup-secrets.sh drivers/eks
 fi
 
-# Tag the cluster and the iamserviceaccount's role.
-MONGODB_OWNER_TAG="${MONGODB_OWNER_TAG:-client-libraries-managers@mongodb.com}"
-MONGODB_ENV_TAG="${MONGODB_ENV_TAG:-dev}"
+# Tagging intentionally omitted (DRIVERS-3712 red: untagged baseline)..
+# The verify block below is expected to FAIL with "lacks mongodb-owner/mongodb-env".
 
 # --region must be explicit: eksctl otherwise falls back to the ambient
 # AWS region (profile/env default), which may differ from ${EKS_REGION}a/b
 # zone names — leaving the cluster in the wrong region.
-eksctl create cluster --name $EKS_CLUSTER_NAME --region "${EKS_REGION}" --zones "${EKS_REGION}a,${EKS_REGION}b" \
-  --tags "mongodb-owner=${MONGODB_OWNER_TAG},mongodb-env=${MONGODB_ENV_TAG}"
+eksctl create cluster --name $EKS_CLUSTER_NAME --region "${EKS_REGION}" --zones "${EKS_REGION}a,${EKS_REGION}b"
 kubectl config set-context --current
 eksctl utils associate-iam-oidc-provider --cluster $EKS_CLUSTER_NAME --region "${EKS_REGION}" --approve
 eksctl create iamserviceaccount \
@@ -30,14 +28,8 @@ eksctl create iamserviceaccount \
     --region "${EKS_REGION}" \
     --role-name $EKS_IAM_ROLE_NAME \
     --attach-policy-arn $EKS_POLICY_ARN \
-    --tags "mongodb-owner=${MONGODB_OWNER_TAG},mongodb-env=${MONGODB_ENV_TAG}" \
     --approve \
     --override-existing-serviceaccounts
-
-# eksctl's --tags reaches the stack, not the role.
-aws iam tag-role --role-name "$EKS_IAM_ROLE_NAME" --tags \
-  "Key=mongodb-owner,Value=${MONGODB_OWNER_TAG}" \
-  "Key=mongodb-env,Value=${MONGODB_ENV_TAG}"
 
 # Verify the cluster's and role's tags when requested.
 if [ -n "${VERIFY_MONGODB_TAGS:-}" ]; then

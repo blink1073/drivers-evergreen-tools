@@ -46,9 +46,8 @@ for VARNAME in "${VARLIST[@]}"; do
 [[ -z "${!VARNAME:-}" ]] && echo "ERROR: $VARNAME not set" && exit 1;
 done
 
-# Tag the stack and function.
-MONGODB_OWNER_TAG="${MONGODB_OWNER_TAG:-client-libraries-managers@mongodb.com}"
-MONGODB_ENV_TAG="${MONGODB_ENV_TAG:-dev}"
+# Tagging intentionally omitted (DRIVERS-3712 red: untagged baseline)..
+# The verify block below is expected to FAIL with "lacks mongodb-owner/mongodb-env".
 
 # Ensure a tagged artifact bucket exists: --resolve-s3 would create an
 # untagged managed bucket. S3 has no tags-on-create, so create, then tag.
@@ -116,14 +115,13 @@ restart_cluster_primary ()
 # Deploys a lambda function to the set stack name.
 deploy_lambda_function ()
 {
-  ensure_artifact_bucket
+  # Bucket ensure intentionally omitted (DRIVERS-3712 red: untagged baseline).
   echo "Deploying Lambda function..."
   sam deploy \
     --no-confirm-changeset \
     --stack-name "${CLUSTER_NAME}" \
     --capabilities CAPABILITY_IAM \
-    --s3-bucket "${ARTIFACT_BUCKET}" \
-    --tags "mongodb-owner=${MONGODB_OWNER_TAG}" "mongodb-env=${MONGODB_ENV_TAG}" \
+    --resolve-s3 \
     --parameter-overrides "MongoDbUri=${MONGODB_URI}" \
     --region ${AWS_REGION}
 }

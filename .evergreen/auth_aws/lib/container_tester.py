@@ -203,19 +203,9 @@ def remote_create_container(
     """
     ecs_client = boto3.client("ecs", region_name=_get_region(cluster))
 
-    # ECS tag dicts use lowercase key/value names; empty overrides fall back
-    # to the defaults.
-    tags = [
-        {
-            "key": "mongodb-owner",
-            "value": os.environ.get("MONGODB_OWNER_TAG")
-            or "client-libraries-managers@mongodb.com",
-        },
-        {
-            "key": "mongodb-env",
-            "value": os.environ.get("MONGODB_ENV_TAG") or "dev",
-        },
-    ]
+    # Tagging intentionally omitted (DRIVERS-3712 red: untagged baseline)..
+    # The fatal verify gate below is expected to FAIL for the untagged
+    # baseline; it stands in for the policy denial that starts 2026-11-03.
 
     resp = ecs_client.create_service(
         cluster=cluster,
@@ -223,7 +213,6 @@ def remote_create_container(
         taskDefinition=task_definition,
         desiredCount=1,
         launchType="FARGATE",
-        tags=tags,
         # Tasks do not inherit service tags by default (propagateTags defaults
         # to NONE).
         propagateTags="SERVICE",
