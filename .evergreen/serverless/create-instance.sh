@@ -101,6 +101,15 @@ if [ $SERVERLESS_URI = "null" ]; then
   exit 1
 fi
 
+# Verify the instance's tags when requested (DRIVERS-3712).
+if [ -n "${VERIFY_MONGODB_TAGS:-}" ]; then
+  . "$DRIVERS_TOOLS"/.evergreen/verify-tags.sh
+  verify_atlas_tags "Atlas serverless instance ${DEPLOYMENT_NAME}" \
+    "$(curl -sS \
+      --digest -u "${ATLAS_PUBLIC_API_KEY}:${ATLAS_PRIVATE_API_KEY}" \
+      "${ATLAS_BASE_URL}/groups/${ATLAS_GROUP_ID}/${DEPLOYMENT_TYPE}/${DEPLOYMENT_NAME}")" "tags"
+fi
+
 ensure_uv || exit 1
 
 RESP=$(curl -sS \
