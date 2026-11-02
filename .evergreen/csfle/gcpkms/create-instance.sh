@@ -19,10 +19,8 @@ for VARNAME in "${VARLIST[@]}"; do
   [[ -z "${!VARNAME:-}" ]] && echo "ERROR: $VARNAME not set" && exit 1;
 done
 
-# Label the instance per the MongoDB Cloud Tag Policy (DRIVERS-3712).
-# GCP labels are lowercase-only, so the owner default omits @mongodb.com.
-MONGODB_OWNER_TAG="${MONGODB_OWNER_TAG:-client-libraries-managers}"
-MONGODB_ENV_TAG="${MONGODB_ENV_TAG:-dev}"
+# Tagging intentionally omitted (DRIVERS-3712 red: untagged baseline)..
+# The verify block below is expected to FAIL with "lacks mongodb-owner/mongodb-env".
 
 GCPKMS_INSTANCENAME="instancename-$RANDOM"
 
@@ -45,22 +43,10 @@ $GCPKMS_GCLOUD compute instances create $GCPKMS_INSTANCENAME \
     --metadata-from-file=startup-script=$DRIVERS_TOOLS/.evergreen/csfle/gcpkms/remote-scripts/startup.sh \
     --scopes https://www.googleapis.com/auth/cloudkms,https://www.googleapis.com/auth/compute \
     --metadata enable-oslogin=TRUE \
-    --labels "mongodb-owner=$MONGODB_OWNER_TAG,mongodb-env=$MONGODB_ENV_TAG" \
     --boot-disk-size $GCPKMS_DISKSIZE
 echo "Creating GCE instance ($GCPKMS_INSTANCENAME) ... end"
 
-# --labels above only reaches the VM; label the boot disk too (DRIVERS-3712).
-# A failed update deletes the instance: teardown metadata is persisted only
-# after this script returns.
-if ! $GCPKMS_GCLOUD compute disks update "$GCPKMS_INSTANCENAME" \
-    --zone "$GCPKMS_ZONE" --project "$GCPKMS_PROJECT" \
-    --update-labels "mongodb-owner=$MONGODB_OWNER_TAG,mongodb-env=$MONGODB_ENV_TAG"; then
-  echo "Labeling the boot disk failed; deleting instance ${GCPKMS_INSTANCENAME}" 1>&2
-  $GCPKMS_GCLOUD compute instances delete "$GCPKMS_INSTANCENAME" \
-      --zone "$GCPKMS_ZONE" --project "$GCPKMS_PROJECT" --quiet || true
-  exit 1
-fi
-
+# Tagging intentionally omitted (DRIVERS-3712 red: untagged baseline)..
 # Verify labels when requested (DRIVERS-3712). verify_cloud_tags exits the
 # sourcing shell, so on failure delete the instance (and its boot disk)
 # before exiting.
