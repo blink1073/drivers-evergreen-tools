@@ -112,21 +112,10 @@ def setup_ec2():
     return dict()
 
 
-def resolve_server_binary(path: str) -> str:
-    """Obtain the real mongodb binary for the given path. (DRIVERS-3673)
-
-    See `_tee_wrap_server_binaries()` in mongodb_runner.py for more details.
-    """
-    real = Path(f"{path}-real")
-    if real.is_file():
-        return str(real)
-    return path
-
-
 def ecs_test_files(mongo_binaries: str, project_dir: str) -> str:
     """Construct the list of `--files` to be copied into the ECS container."""
-    mongod = resolve_server_binary(f"{mongo_binaries}/mongod")
-    mongosh = resolve_server_binary(f"{mongo_binaries}/mongosh")
+    mongod = f"{mongo_binaries}/mongod"
+    mongosh = f"{mongo_binaries}/mongosh"
     return (
         f"{mongod}:/root/mongod {mongosh}:/root/mongosh"
         " lib/ecs_hosted_test.js:/root/ecs_hosted_test.js"
@@ -171,10 +160,16 @@ def setup_ecs():
         " --script lib/ecs_hosted_test.sh"
     )
 
-    # Pass in the AWS credentials as environment variables
+    # Pass in the AWS credentials as environment variables.
     # AWS_SHARED_CREDENTIALS_FILE does not work in evergreen for an unknown
-    #  reason
-    env = dict(
+    # reason. Minimal environment: credentials plus the tag-verification
+    # flags, keeping vault-loaded secrets out of the subprocess tree.
+    env = {
+        key: os.environ[key]
+        for key in ("VERIFY_MONGODB_TAGS", "MONGODB_OWNER_TAG", "MONGODB_ENV_TAG")
+        if key in os.environ
+    }
+    env.update(
         AWS_ACCESS_KEY_ID=CONFIG[get_key("iam_auth_ecs_account")],
         AWS_SECRET_ACCESS_KEY=CONFIG[get_key("iam_auth_ecs_secret_access_key")],
     )
