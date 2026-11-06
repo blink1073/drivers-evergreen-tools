@@ -19,9 +19,8 @@ fi
 az logout || true
 az login
 
-# Tag all created resources.
-MONGODB_OWNER_TAG="${MONGODB_OWNER_TAG:-client-libraries-managers@mongodb.com}"
-MONGODB_ENV_TAG="${MONGODB_ENV_TAG:-dev}"
+# Tagging intentionally omitted (DRIVERS-3712 red: untagged baseline)..
+# The verify block below is expected to FAIL with "lacks mongodb-owner/mongodb-env".
 
 # Delete the partially created resource group when a provisioning step after
 # the group create fails: a leftover partial group blocks re-runs
@@ -44,36 +43,19 @@ if [ -n "${EXISTING}" ]; then
   exit 1
 fi
 AKS_SUBSCRIPTION="$(az account show --query id --output tsv)"
-az group create --name "${AKS_RESOURCE_GROUP}" --location ${AKS_LOCATION} \
-  --tags "mongodb-owner=${MONGODB_OWNER_TAG}" "mongodb-env=${MONGODB_ENV_TAG}"
+az group create --name "${AKS_RESOURCE_GROUP}" --location ${AKS_LOCATION}
 group_created=1
 az aks create -g "${AKS_RESOURCE_GROUP}" -n "${AKS_CLUSTER_NAME}" \
   --node-count 1 --enable-oidc-issuer --enable-workload-identity \
   --enable-cluster-autoscaler --min-count 1 --max-count 3 \
-  --generate-ssh-keys \
-  --tags "mongodb-owner=${MONGODB_OWNER_TAG}" "mongodb-env=${MONGODB_ENV_TAG}"
+  --generate-ssh-keys
 
-# az aks create --tags reaches only the cluster resource: the AKS-created
-# node resource group (which holds the billable nodes, the load balancer IP,
-# and the networks) and the node pools backing the VMSS stay untagged; tag
-# both.
-MC_RESOURCE_GROUP="$(az aks show -n "${AKS_CLUSTER_NAME}" -g "${AKS_RESOURCE_GROUP}" \
-  --query nodeResourceGroup -otsv)"
-az tag create --resource-id "$(az group show -n "${MC_RESOURCE_GROUP}" --query id -otsv)" \
-  --tags "mongodb-owner=${MONGODB_OWNER_TAG}" "mongodb-env=${MONGODB_ENV_TAG}" >/dev/null
-AKS_POOLS=$(az aks nodepool list -g "${AKS_RESOURCE_GROUP}" \
-  --cluster-name "${AKS_CLUSTER_NAME}" --output json)
-for AKS_POOL in $(echo "${AKS_POOLS}" | jq -r '.[].name'); do
-  az aks nodepool update -g "${AKS_RESOURCE_GROUP}" --cluster-name "${AKS_CLUSTER_NAME}" \
-    -n "${AKS_POOL}" --tags "mongodb-owner=${MONGODB_OWNER_TAG}" "mongodb-env=${MONGODB_ENV_TAG}" >/dev/null
-done
-
+# Tagging intentionally omitted (DRIVERS-3712 red: untagged baseline)..
 AKS_OIDC_ISSUER="$(az aks show -n "${AKS_CLUSTER_NAME}" -g "${AKS_RESOURCE_GROUP}" --query "oidcIssuerProfile.issuerUrl" -otsv)"
 export AKS_OIDC_ISSUER
 az account set --subscription "${AKS_SUBSCRIPTION}"
 az identity create --name "${AKS_USER_ASSIGNED_IDENTITY_NAME}" --resource-group "${AKS_RESOURCE_GROUP}" \
-  --location "${AKS_LOCATION}" --subscription "${AKS_SUBSCRIPTION}" \
-  --tags "mongodb-owner=${MONGODB_OWNER_TAG}" "mongodb-env=${MONGODB_ENV_TAG}"
+  --location "${AKS_LOCATION}" --subscription "${AKS_SUBSCRIPTION}"
 USER_ASSIGNED_CLIENT_ID="$(az identity show --resource-group "${AKS_RESOURCE_GROUP}" \
   --name "${AKS_USER_ASSIGNED_IDENTITY_NAME}" --query 'clientId' -otsv)"
 export USER_ASSIGNED_CLIENT_ID

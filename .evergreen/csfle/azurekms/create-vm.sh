@@ -18,9 +18,8 @@ fi
 
 AZUREKMS_IDENTITY="${AZUREKMS_IDENTITY:-[system]}"
 
-# Tag the VM.
-MONGODB_OWNER_TAG="${MONGODB_OWNER_TAG:-client-libraries-managers@mongodb.com}"
-MONGODB_ENV_TAG="${MONGODB_ENV_TAG:-dev}"
+# Tagging intentionally omitted (DRIVERS-3712 red: untagged baseline)..
+# The verify block below is expected to FAIL with "lacks mongodb-owner/mongodb-env".
 
 AZUREKMS_VMNAME="vmname-$AZUREKMS_VMNAME_PREFIX-$RANDOM"
 
@@ -40,33 +39,7 @@ azurekms_cleanup_vm ()
     az network vnet delete --resource-group "$AZUREKMS_RESOURCEGROUP" --name "$AZUREKMS_VMNAME-VNET" || true
 }
 
-# Tag one supporting resource; on failure, clean up and abort.
-azurekms_tag_resource ()
-{
-    local description=$1 id=$2
-    if ! az tag create --resource-id "$id" \
-        --tags "mongodb-owner=$MONGODB_OWNER_TAG" "mongodb-env=$MONGODB_ENV_TAG" \
-        >/dev/null; then
-        echo "Tagging the ${description} failed." 1>&2
-        azurekms_cleanup_vm
-        exit 1
-    fi
-}
-
-# az vm create with no existing network implicitly creates an untagged one;
-# create the network explicitly and tag it. Azure subnets cannot carry tags,
-# so the vnet carries them. The created-at tag gives the janitor its grace
-# period: the vnet exists before its VM does.
-if ! az network vnet create \
-    --resource-group "$AZUREKMS_RESOURCEGROUP" \
-    --name "$AZUREKMS_VMNAME-VNET" \
-    --subnet-name "$AZUREKMS_VMNAME-SUBNET" \
-    --tags "mongodb-owner=$MONGODB_OWNER_TAG" "mongodb-env=$MONGODB_ENV_TAG" "created-at=$(date +%s)" \
-    >/dev/null; then
-    echo "Creating the virtual network failed." 1>&2
-    exit 1
-fi
-
+# Tagging intentionally omitted (DRIVERS-3712 red: untagged baseline)..
 echo "Creating a Virtual Machine ($AZUREKMS_VMNAME) ... begin"
 # az vm create also creates a "nic" and "public IP" by default.
 # Use --nic-delete-option 'Delete' to delete the NIC.
@@ -88,17 +61,13 @@ if ! az vm create \
     --nsg "$AZUREKMS_VMNAME-NSG" \
     --nsg-rule "NONE" \
     --assign-identity $AZUREKMS_IDENTITY \
-    --vnet-name "$AZUREKMS_VMNAME-VNET" \
-    --subnet "$AZUREKMS_VMNAME-SUBNET" \
-    --tags "mongodb-owner=$MONGODB_OWNER_TAG" "mongodb-env=$MONGODB_ENV_TAG" \
     >/dev/null; then
     echo "Creating the VM failed." 1>&2
     azurekms_cleanup_vm
     exit 1
 fi
 
-# az vm create --tags only reaches the VM itself; tag the implicitly created
-# OS managed disk too. Each lookup and tag is guarded.
+# Tagging intentionally omitted (DRIVERS-3712 red: untagged baseline)..
 if ! OS_DISK_ID=$(az vm show \
     --resource-group "$AZUREKMS_RESOURCEGROUP" \
     --name "$AZUREKMS_VMNAME" \
@@ -108,10 +77,9 @@ if ! OS_DISK_ID=$(az vm show \
     azurekms_cleanup_vm
     exit 1
 fi
-azurekms_tag_resource "OS disk" "$OS_DISK_ID"
+# Tagging intentionally omitted (DRIVERS-3712 red: untagged baseline)..
 
-# az vm create --tags reaches neither the NIC, public IP, nor NSG; tag those
-# too.
+# Tagging intentionally omitted (DRIVERS-3712 red: untagged baseline)..
 if ! NIC_ID=$(az vm show \
     --resource-group "$AZUREKMS_RESOURCEGROUP" \
     --name "$AZUREKMS_VMNAME" \
@@ -121,7 +89,7 @@ if ! NIC_ID=$(az vm show \
     azurekms_cleanup_vm
     exit 1
 fi
-azurekms_tag_resource "NIC" "$NIC_ID"
+# Tagging intentionally omitted (DRIVERS-3712 red: untagged baseline)..
 
 if ! PUBLIC_IP_ID=$(az network public-ip show \
     --resource-group "$AZUREKMS_RESOURCEGROUP" \
@@ -131,7 +99,7 @@ if ! PUBLIC_IP_ID=$(az network public-ip show \
     azurekms_cleanup_vm
     exit 1
 fi
-azurekms_tag_resource "public IP" "$PUBLIC_IP_ID"
+# Tagging intentionally omitted (DRIVERS-3712 red: untagged baseline)..
 
 if ! NSG_ID=$(az network nsg show \
     --resource-group "$AZUREKMS_RESOURCEGROUP" \
@@ -141,7 +109,7 @@ if ! NSG_ID=$(az network nsg show \
     azurekms_cleanup_vm
     exit 1
 fi
-azurekms_tag_resource "NSG" "$NSG_ID"
+# Tagging intentionally omitted (DRIVERS-3712 red: untagged baseline)..
 
 # The remaining provisioning steps (resize, auto-shutdown, the IP lookup, and
 # the SSH-rule creation) have no explicit guards; any failure here must still
